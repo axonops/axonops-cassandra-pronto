@@ -9,3 +9,6 @@ user-keys.yaml
 ssh_config
 hosts
 .DS_Store
+
+CLAUDE.md
+.claude/
