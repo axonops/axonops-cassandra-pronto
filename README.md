@@ -1,3 +1,21 @@
+> [!WARNING]
+> ## IN DEVELOPMENT — DO NOT USE IN PRODUCTION
+> This repository is currently under active development and should be considered unstable.
+> Interfaces, behavior, configuration, and supporting components may change without notice.
+
+## About this fork
+
+This repository is a fork of the original [Intuit dse-pronto](https://github.com/intuit/dse-pronto).
+
+The original project appears to have been inactive for some time, so this fork is intended as a respectful continuation for users who still find the project valuable and want to keep it usable in current environments.
+
+The goals of this fork are to:
+- update and maintain the project for modern usage,
+- improve compatibility where needed, and
+- add support for managing clusters with **AxonOps**.
+
+This work builds on the original foundation created by the Intuit team, and credit for that foundation belongs to them.
+
 # DSE Pronto
 
 An automation suite for deploying and managing [DataStax Cassandra](https://docs.datastax.com/en/landing_page/doc/landing_page/current.html)
