@@ -1,4 +1,10 @@
 ---
 collections:
-  - name: axonops.axonops
-    version: ">=0.6.0"
+  - name: https://github.com/axonops/axonops-ansible-collection.git
+    type: git
+    version: fix/cassandra-311-yum-repo
+  - name: community.general
+    source: https://galaxy.ansible.com
+  - name: ansible.posix
+  - name: community.general
+  - name: community.crypto

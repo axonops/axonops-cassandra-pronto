@@ -126,6 +126,9 @@ ENV="$(parse PACKER_ENVIRONMENT)"
 
 # configured artifact versions
 CASSANDRA_VER="$(parse PACKER_CASSANDRA_FULL_VER)"
+# strip the trailing "-<build>" suffix (e.g. "3.11.17-1" -> "3.11.17") for the
+# ansible cassandra role's cassandra_version var, which expects plain semver.
+CASSANDRA_SEMVER="${CASSANDRA_VER%-*}"
 
 # make sure pkg versions are specified as needed
 if [[ "${ami_type}" == "cassandra" ]]; then
@@ -273,6 +276,7 @@ AWS_REGION="${REGION}" \
   PACKER_SUBNET_ID="${SUBNET_ID}" \
   PACKER_SG_ID="${GROUP_ID}" \
   PACKER_CASSANDRA_VER="${CASSANDRA_VER}" \
+  PACKER_CASSANDRA_SEMVER="${CASSANDRA_SEMVER}" \
   PACKER_ROLE="${PACKER_ROLE_NAME}" \
   BASE_AMI_ID="${BASE_AMI_ID}" \
   BASE_AMI_NAME="${BASE_AMI_NAME}" \

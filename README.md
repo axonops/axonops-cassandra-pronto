@@ -53,8 +53,8 @@ then welcome to Cassandra Pronto!
 * Transparent restacking operations, to keep in compliance with latest baseline images
   * Data stored on persistent EBS volumes, static EIP for predictable address, both located (using EC2 tags) and reattached
     during restack
-* Apache Cassandra 3.11.x supported (3.11.10, 3.11.16, 3.11.17)
-* Latest Amazon Linux 2.0 & Python 3 in use
+* Apache Cassandra 3.11.x supported (3.11.19)
+* Latest Amazon Linux 2023 & Python 3 in use
 * [More FAQs and details here](docs/MORE_DETAILS.md)
 
 ## Tools Required

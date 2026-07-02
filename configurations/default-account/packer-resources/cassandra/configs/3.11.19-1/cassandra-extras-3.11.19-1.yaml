@@ -1,4 +1,4 @@
-# Placeholder for additional Apache Cassandra 3.11.17 configuration.
+# Placeholder for additional Apache Cassandra 3.11.19 configuration.
 #
 # The equivalent file shipped by DataStax Enterprise (dse.yaml) held DSE-only
 # settings (DSE Search, DSE Graph, DSE Analytics/Spark, DSE Advanced
@@ -7,4 +7,4 @@
 # there is no equivalent configuration to carry over.
 #
 # All genuinely OSS-relevant settings (authentication, authorization,
-# encryption, timeouts, caches, etc.) live in cassandra-3.11.17-1.yaml.
+# encryption, timeouts, caches, etc.) live in cassandra-3.11.19-1.yaml.

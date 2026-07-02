@@ -11,7 +11,7 @@
     "base_ami_id": "{{env `BASE_AMI_ID`}}",
     "base_ami_name" : "{{env `BASE_AMI_NAME`}}",
     "packer_cassandra_version": "{{env `PACKER_CASSANDRA_VER`}}",
-    "cassandra_semver": "{{ element (split (env `PACKER_CASSANDRA_VER`) \"-\") 0 }}",
+    "cassandra_semver": "{{env `PACKER_CASSANDRA_SEMVER`}}",
     "packer_iam_profile": "{{env `PACKER_ROLE`}}",
     "packer_env": "{{env `PACKER_ENVIRONMENT`}}",
     "config_path": "{{env `PACKER_CONFIG_PATH`}}"
@@ -86,7 +86,7 @@
     {
       "type": "shell",
       "inline": [
-        "sudo yum install -y python3 python3-pip python3-botocore python3-boto3",
+        "sudo yum install -y python3 python3-pip python3-botocore python3-boto3 git",
         "mkdir /home/ec2-user/.pip/",
         "sudo mv /tmp/include/pip.conf /home/ec2-user/.pip/pip.conf",
         "python3 -m pip install --user --upgrade awsretry",
@@ -94,11 +94,31 @@
       ]
     },
     {
-      "type": "ansible",
-      "playbook_file": "./ansible/bake-cassandra.yml",
-      "galaxy_file": "./ansible/requirements.yml",
-      "extra_arguments": [
-        "--extra-vars", "cassandra_full_version={{user `cassandra_semver`}}"
+      "type": "file",
+      "source": "./ansible",
+      "destination": "/tmp"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "sudo python3 -m venv /opt/ansible-venv",
+        "sudo /opt/ansible-venv/bin/pip install --upgrade pip",
+        "sudo /opt/ansible-venv/bin/pip install 'ansible-core==2.15.*'",
+        "sudo mkdir -p /opt/tmp",
+        "sudo chmod 1777 /opt/tmp",
+        "sudo /opt/ansible-venv/bin/ansible-galaxy collection install -r /tmp/ansible/requirements.yml"
+      ]
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "sudo /opt/ansible-venv/bin/ansible-playbook /tmp/ansible/bake-cassandra.yml --connection=local -i localhost, --extra-vars \"ansible_python_interpreter=/opt/ansible-venv/bin/python3 ansible_remote_tmp=/opt/tmp ansible_local_tmp=/opt/tmp cassandra_full_version={{user `cassandra_semver`}}\""
+      ]
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "sudo rm -rf /tmp/ansible /opt/ansible-venv /opt/tmp /root/.ansible"
       ]
     },
     {

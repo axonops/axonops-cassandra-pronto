@@ -15,7 +15,7 @@ PACKER_SUBNET_ID:           "<<< YOUR_AMI_BAKING_SUBNET_ID_HERE >>>"
 PACKER_BASE_AMI_ID:         ""
 
 # version of Apache Cassandra artifacts to install
-PACKER_CASSANDRA_FULL_VER:  "3.11.17-1"
+PACKER_CASSANDRA_FULL_VER:  "3.11.19-1"
 
 ##################################################
 # these vars are required for terraform deployments
