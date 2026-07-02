@@ -75,9 +75,9 @@ while getopts ":i:t:a:v:" opt; do
   esac
 done
 
-if [[ -z "${ami_type// }" ]]; then usage; exit 2; fi
-if [[ -z "${account_name// }" ]]; then usage; exit 2; fi
-if [[ -z "${vpc_name// }" ]]; then usage; exit 2; fi
+if [[ -z "${ami_type:-}" ]]; then usage; exit 2; fi
+if [[ -z "${account_name:-}" ]]; then usage; exit 2; fi
+if [[ -z "${vpc_name:-}" ]]; then usage; exit 2; fi
 
 INPUT_VAR_FILE="${CONFIGS}/${account_name}/variables.yaml"
 
@@ -172,11 +172,11 @@ if [[ -z "${BASE_AMI_ID:-}" ]]; then
 fi
 
 if [[ -z "${BASE_AMI_ID:-}" ]]; then
-  echo "Base AMI not configured, looking up an appropriate Amazon Linux base AMI..."
+  echo "Base AMI not configured, looking up latest Amazon Linux 2023 base AMI..."
   BASE_AMI_ID=$("${AWS_CMD[@]}" ec2 describe-images \
-                  --query 'sort_by(Images, &CreationDate)[-1].ImageId' --output text \
-                  --filters "Name=owner-alias,Values=amazon" "Name=is-public,Values=true" "Name=state,Values=available" \
-                            "Name=name,Values=amzn2-ami-hvm-2.0*x86_64-gp2")
+                  --owners amazon \
+                  --filters "Name=name,Values=al2023-ami-*-kernel-*-x86_64" "Name=state,Values=available" \
+                  --query 'sort_by(Images, &CreationDate)[-1].ImageId' --output text)
 fi
 
 if [[ -z "${BASE_AMI_ID:-}" || "${BASE_AMI_ID}" == "None" ]]; then

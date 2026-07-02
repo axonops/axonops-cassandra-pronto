@@ -1,0 +1,30 @@
+---
+# Installs Java, Apache Cassandra, and the AxonOps agent package into the AMI
+# via the axonops.axonops collection. Per-node runtime config (dc/rack/seeds/
+# listen address) is applied at instance boot by cassandra-init.tpl and
+# /opt/cassandra/scripts/bootstrap.sh -- this playbook only bakes packages.
+- name: Bake Apache Cassandra AMI
+  hosts: all
+  become: true
+  vars:
+    cassandra_install_format: pkg
+    cassandra_start_on_boot: false
+    java_pkg: java-1.8.0-openjdk-headless
+
+    # axon-agent: install the package only. Real org/customer identity is
+    # secret and gets configured post-boot, not baked into the AMI.
+    axon_java_agent: axon-cassandra3.11-agent
+    axon_agent_customer_name: "REPLACE_AT_RUNTIME"
+    axon_agent_configure: false
+
+  roles:
+    - role: axonops.axonops.java
+      tags: java
+
+    - role: axonops.axonops.cassandra
+      tags: cassandra
+      vars:
+        cassandra_version: "{{ cassandra_full_version }}"
+
+    - role: axonops.axonops.agent
+      tags: agent

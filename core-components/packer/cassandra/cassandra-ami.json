@@ -11,6 +11,7 @@
     "base_ami_id": "{{env `BASE_AMI_ID`}}",
     "base_ami_name" : "{{env `BASE_AMI_NAME`}}",
     "packer_cassandra_version": "{{env `PACKER_CASSANDRA_VER`}}",
+    "cassandra_semver": "{{ element (split (env `PACKER_CASSANDRA_VER`) \"-\") 0 }}",
     "packer_iam_profile": "{{env `PACKER_ROLE`}}",
     "packer_env": "{{env `PACKER_ENVIRONMENT`}}",
     "config_path": "{{env `PACKER_CONFIG_PATH`}}"
@@ -85,7 +86,7 @@
     {
       "type": "shell",
       "inline": [
-        "sudo yum install -y java-1.8.0-openjdk python3 python3-pip python3-botocore python3-boto3",
+        "sudo yum install -y python3 python3-pip python3-botocore python3-boto3",
         "mkdir /home/ec2-user/.pip/",
         "sudo mv /tmp/include/pip.conf /home/ec2-user/.pip/pip.conf",
         "python3 -m pip install --user --upgrade awsretry",
@@ -93,17 +94,12 @@
       ]
     },
     {
-      "type": "shell",
-      "inline": [
-        "sudo mv /tmp/include/cassandra.repo /etc/yum.repos.d/cassandra.repo",
-        "sudo rpm --import https://downloads.apache.org/cassandra/KEYS",
-        "sudo yum install -y cassandra-{{user `packer_cassandra_version`}}"
+      "type": "ansible",
+      "playbook_file": "./ansible/bake-cassandra.yml",
+      "galaxy_file": "./ansible/requirements.yml",
+      "extra_arguments": [
+        "--extra-vars", "cassandra_full_version={{user `cassandra_semver`}}"
       ]
-    },
-    {
-      "type": "file",
-      "source": "{{user `config_path`}}/cassandra/configs",
-      "destination": "/tmp/include"
     },
     {
       "type": "shell",
@@ -112,9 +108,6 @@
         "sudo mv /tmp/include/sysctl.conf /etc/sysctl.conf",
         "sudo mv /tmp/include/ntp.conf /etc/ntp.conf",
         "sudo mv /tmp/include/trusted.conf /etc/dnsmasq.d/trusted.conf",
-        "sudo mv /tmp/include/configs/{{user `packer_cassandra_version`}}/cassandra-{{user `packer_cassandra_version`}}.yaml /etc/cassandra/cassandra.yaml",
-        "sudo mv /tmp/include/configs/{{user `packer_cassandra_version`}}/cassandra-env-{{user `packer_cassandra_version`}}.sh /etc/cassandra/cassandra-env.sh",
-        "sudo chmod +x /etc/cassandra/cassandra-env.sh",
         "sudo chmod +x /tmp/include/update_auditd.sh",
         "sudo /tmp/include/update_auditd.sh",
         "sudo rm -rf /tmp/include"

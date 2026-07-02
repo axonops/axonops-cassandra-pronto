@@ -1,0 +1,4 @@
+---
+collections:
+  - name: axonops.axonops
+    version: ">=0.6.0"
