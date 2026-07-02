@@ -79,7 +79,7 @@ if [[ -z "${vpc_name// }" ]]; then usage; exit 1; fi
 if [[ -z "${cluster_name// }" ]]; then usage; exit 1; fi
 
 variables_path=${CONFIGS}/${account_name}/variables.yaml
-parameter_path="/dse/${account_name}/${vpc_name}/${cluster_name}/secrets"
+parameter_path="/cassandra/${account_name}/${vpc_name}/${cluster_name}/secrets"
 
 ################################
 # check credentials

@@ -12,7 +12,7 @@ resource "aws_network_interface" "cas-seed-eni" {
 }
 
 resource "aws_network_interface" "cas-non-seed-eni" {
-  count = (var.dse_nodes_per_az - 1) * length(var.availability_zones)
+  count = (var.cassandra_nodes_per_az - 1) * length(var.availability_zones)
 
   # round-robin the non-seeds into the available subnets
   subnet_id = element(

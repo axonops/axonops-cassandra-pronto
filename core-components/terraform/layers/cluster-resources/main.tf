@@ -21,38 +21,38 @@ data "terraform_remote_state" "vpc-resources" {
 module "cassandra" {
   source = "../../modules/cassandra"
 
-  vpc_id                = data.terraform_remote_state.vpc-resources.outputs.vpc_id
-  vpc_name              = var.vpc_name
-  account_id            = var.account_id
-  account_name          = var.account_name
-  region                = var.region
-  tfstate_bucket        = var.tfstate_bucket
+  vpc_id         = data.terraform_remote_state.vpc-resources.outputs.vpc_id
+  vpc_name       = var.vpc_name
+  account_id     = var.account_id
+  account_name   = var.account_name
+  region         = var.region
+  tfstate_bucket = var.tfstate_bucket
 
   # cassandra cluster variables
-  ami_prefix            = var.ami_prefix
-  ami_owner_id          = var.ami_owner_id
-  instance_type         = var.instance_type
-  cassandra_profile_arn = data.terraform_remote_state.account-resources.outputs.cassandra_profile_arn
-  cluster_name          = var.cluster_name
-  datacenter            = var.region
-  availability_zones    = var.availability_zones
-  dse_nodes_per_az      = var.dse_nodes_per_az
-  auto_start_dse        = var.auto_start_dse
-  graph_enabled         = var.graph_enabled
-  solr_enabled          = var.solr_enabled
-  spark_enabled         = var.spark_enabled
-  sg_ops_nodes_to_cas   = data.terraform_remote_state.vpc-resources.outputs.sg_ops_nodes_to_cas
-  sg_bas_nodes_to_all   = data.terraform_remote_state.vpc-resources.outputs.bastion_sg_id
-  cluster_subnet_cidrs  = data.terraform_remote_state.vpc-resources.outputs.data_subnet_cidr_blocks
-  cluster_subnet_ids    = data.terraform_remote_state.vpc-resources.outputs.data_subnet_ids
+  ami_prefix             = var.ami_prefix
+  ami_owner_id           = var.ami_owner_id
+  instance_type          = var.instance_type
+  cassandra_profile_arn  = data.terraform_remote_state.account-resources.outputs.cassandra_profile_arn
+  cluster_name           = var.cluster_name
+  datacenter             = var.region
+  availability_zones     = var.availability_zones
+  cassandra_nodes_per_az = var.cassandra_nodes_per_az
+  auto_start_cassandra   = var.auto_start_cassandra
+  graph_enabled          = var.graph_enabled
+  solr_enabled           = var.solr_enabled
+  spark_enabled          = var.spark_enabled
+  sg_ops_nodes_to_cas    = data.terraform_remote_state.vpc-resources.outputs.sg_ops_nodes_to_cas
+  sg_bas_nodes_to_all    = data.terraform_remote_state.vpc-resources.outputs.bastion_sg_id
+  cluster_subnet_cidrs   = data.terraform_remote_state.vpc-resources.outputs.data_subnet_cidr_blocks
+  cluster_subnet_ids     = data.terraform_remote_state.vpc-resources.outputs.data_subnet_ids
 
   # settings for cassandra node root volume
-  root_volume_type     = var.root_volume_type
-  root_volume_size     = var.root_volume_size
-  root_volume_iops     = var.root_volume_iops
+  root_volume_type = var.root_volume_type
+  root_volume_size = var.root_volume_size
+  root_volume_iops = var.root_volume_iops
 
   # this order is important: duplicate tags will be overwritten in argument order
-  ec2_tags             = merge(var.account_tags, var.vpc_tags, var.cluster_tags)
+  ec2_tags = merge(var.account_tags, var.vpc_tags, var.cluster_tags)
 }
 
 ###################
@@ -69,7 +69,7 @@ module "parameter-store" {
   # remember to update this when adding/removing parameters from the list below!
   # dynamic list sizes can screw with terraform (it's a known bug) and result in the error:
   #   aws_ssm_parameter.parameter: value of 'count' cannot be computed
-  parameter_count=21
+  parameter_count = 21
 
   # list of objects (key, value, and optional 'tier' to set a param as Advanced if it's > 4096 bytes)
   parameters = [

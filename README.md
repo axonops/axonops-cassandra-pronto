@@ -16,14 +16,14 @@ The goals of this fork are to:
 
 This work builds on the original foundation created by the Intuit team, and credit for that foundation belongs to them.
 
-# DSE Pronto
+# Cassandra Pronto
 
-An automation suite for deploying and managing [DataStax Cassandra](https://docs.datastax.com/en/landing_page/doc/landing_page/current.html)
+An automation suite for deploying and managing [Apache Cassandra](https://cassandra.apache.org/doc/latest/)
 clusters in AWS.
 
 [![pronto](./docs/images/pronto-logo.png)](https://github.intuit.com/pages/open-source/logo-generator/)
 
-This repository collects Intuit's DSE automation.  We've taken all of our learning for managing Cassandra in AWS and
+This repository collects Intuit's Cassandra automation.  We've taken all of our learning for managing Cassandra in AWS and
 condensed it into a single package for others to leverage.  It uses standard tools
 ([Packer](https://packer.io/docs/index.html), [Terraform](https://www.terraform.io/docs/index.html), and
 [Ansible](https://docs.ansible.com/ansible/latest/index.html)) and can be run from a laptop.  That said, we have a hard
@@ -31,16 +31,14 @@ preference for automated deployments using a CICD orchestrator along the lines o
 [CodeBuild](https://aws.amazon.com/codebuild/)/[CodeDeploy](https://aws.amazon.com/codedeploy/),
 [Bamboo](https://www.atlassian.com/software/bamboo), [GitLab](https://about.gitlab.com/), or [Spinnaker](https://www.spinnaker.io/).
 
-The tools in this repo can take you from an empty AWS account to a fully-functional DSE cluster, but you should have an
+The tools in this repo can take you from an empty AWS account to a fully-functional Apache Cassandra cluster, but you should have an
 understanding of AWS resources, Cassandra cluster management, and at least a passing familiarity with Packer, Terraform,
 and Ansible.
 
 **This is not a "managed" Cassandra solution.**  If you need one of those, [AWS has you covered](https://aws.amazon.com/keyspaces/).
-If you need a fully managed _DataStax_ solution including OpsCenter and other DSE features,
-[DataStax Astra](https://www.datastax.com/products/datastax-astra) is now officially a thing.
 
-On the other hand, if what you're looking for is an open source framework to help you _manage your own_ DSE cluster...
-then welcome to DSE Pronto!
+On the other hand, if what you're looking for is an open source framework to help you _manage your own_ Apache Cassandra cluster...
+then welcome to Cassandra Pronto!
 
 ## Notes and Features
 
@@ -52,12 +50,10 @@ then welcome to DSE Pronto!
   * Runtime operations
     * Restacking and resizing a cluster
     * Bringing nodes up and down
-  * Configuring OpsCenter
-    * Including a number of predefined alerts and best practices
 * Transparent restacking operations, to keep in compliance with latest baseline images
   * Data stored on persistent EBS volumes, static EIP for predictable address, both located (using EC2 tags) and reattached
     during restack
-* DSE 5 & DSE 6 both supported, along with DSE OpsCenter & DSE Studio
+* Apache Cassandra 3.11.x supported (3.11.10, 3.11.16, 3.11.17)
 * Latest Amazon Linux 2.0 & Python 3 in use
 * [More FAQs and details here](docs/MORE_DETAILS.md)
 
@@ -92,15 +88,11 @@ Instructions for deploying AWS resources with Terraform are [here](docs/3.TERRAF
 
 Instructions for running playbooks with Ansible are [here](docs/4.ANSIBLE.md).
 
-## 5. OpsCenter
-
-Instructions for deploying and managing an OpsCenter node are [here](docs/OPSCENTER.md).
-
-## 6. Debugging
+## 5. Debugging
 
 If you're having trouble getting anything to work, go [here](docs/MORE_DETAILS.md) for tips on debugging!
 
-## 7. Cleaning Up
+## 6. Cleaning Up
 
 Instructions for deleting everything deployed by this repo are [here](docs/CLEANUP.md).
 

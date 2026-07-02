@@ -1,7 +1,7 @@
 ---
 # This playbook mounts data volumes.
 
-- name: mount DSE data volumes
+- name: mount Cassandra data volumes
   gather_facts: false
   hosts:
     - '{{ host_list }}'
@@ -16,5 +16,5 @@
     - name: mount volumes
       become: true
       shell: |
-        cd /opt/dse/cassandra/scripts
+        cd /opt/cassandra/scripts
         ./create_volume.sh {{ volume_size }} {{ stripes }} {{ block_size }} {{ raid_level }}

@@ -8,6 +8,6 @@ module "iam-resources" {
   vpc_name       = var.vpc_name
   cluster_name   = var.cluster_name
 
-  prefix         = var.iam_resource_prefix
-  suffix         = var.iam_resource_suffix
+  prefix = var.iam_resource_prefix
+  suffix = var.iam_resource_suffix
 }

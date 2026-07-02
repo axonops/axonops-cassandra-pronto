@@ -1,6 +1,6 @@
 locals {
-  cas_ami_tags = { 
-    "AmiName"             = "${data.aws_ami.cassandra.name}"
+  cas_ami_tags = {
+    "AmiName" = "${data.aws_ami.cassandra.name}"
   }
 }
 
@@ -69,8 +69,8 @@ resource "aws_autoscaling_group" "cassandra-seed-node" {
     for_each = merge(var.ec2_tags, local.required_ec2_tags, local.cas_ami_tags)
 
     content {
-      key = tag.key
-      value = tag.value
+      key                 = tag.key
+      value               = tag.value
       propagate_at_launch = true
     }
   }
@@ -78,7 +78,7 @@ resource "aws_autoscaling_group" "cassandra-seed-node" {
 
 resource "aws_autoscaling_group" "cassandra-non-seed-node" {
   depends_on                = [aws_launch_configuration.cassandra-config]
-  count                     = (var.dse_nodes_per_az - 1) * length(var.availability_zones)
+  count                     = (var.cassandra_nodes_per_az - 1) * length(var.availability_zones)
   name                      = "asg-${var.cluster_name}-non-seed-${count.index}"
   max_size                  = 2
   min_size                  = 1
@@ -102,8 +102,8 @@ resource "aws_autoscaling_group" "cassandra-non-seed-node" {
     for_each = merge(var.ec2_tags, local.required_ec2_tags, local.cas_ami_tags)
 
     content {
-      key = tag.key
-      value = tag.value
+      key                 = tag.key
+      value               = tag.value
       propagate_at_launch = true
     }
   }

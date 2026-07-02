@@ -7,7 +7,6 @@ Time to delete everything, in the opposite order from creation.
 The `terraform destroy` command works perfectly.  Just invoke it on each layer, starting with the last thing you deployed
 and working backwards:
 ```
-$ ./core-components/deploy.sh -a ${ACCOUNT_NAME} -v ${VPC_NAME} -c ${CLUSTER_NAME} -l opscenter -m destroy
 $ ./core-components/deploy.sh -a ${ACCOUNT_NAME} -v ${VPC_NAME} -c ${CLUSTER_NAME} -l cluster -m destroy
 $ ./core-components/deploy.sh -a ${ACCOUNT_NAME} -v ${VPC_NAME} -c ${CLUSTER_NAME} -l vpc -m destroy
 $ ./core-components/deploy.sh -a ${ACCOUNT_NAME} -v ${VPC_NAME} -c ${CLUSTER_NAME} -l account -m destroy
@@ -110,8 +109,8 @@ aws iam delete-role \
 
 ### ALL Non-Terraform Resources
 
-The steps above haven't been scripted to run automatically, **for safety's sake**.  But if you use the default AMI prefixes
-of `dse-cassandra` and `dse-opscenter`, the default role names of `packer-role` and `terraform-role`, and the default Volume
+The steps above haven't been scripted to run automatically, **for safety's sake**.  But if you use the default AMI prefix
+of `cassandra`, the default role names of `packer-role` and `terraform-role`, and the default Volume
 naming patterns, the following will work:
 ```shell
 PROFILE=$1
@@ -129,7 +128,7 @@ for v in $vols; do
   aws ec2 delete-volume --volume-id ${v} --region ${REGION} --profile ${PROFILE}
 done
 
-amis=$(aws ec2 describe-images --query 'Images[*].ImageId' --output text --filters Name=owner-id,Values=${ACCOUNT} Name=name,Values=dse-* --region ${REGION} --profile ${PROFILE})
+amis=$(aws ec2 describe-images --query 'Images[*].ImageId' --output text --filters Name=owner-id,Values=${ACCOUNT} Name=name,Values=cassandra-* --region ${REGION} --profile ${PROFILE})
 for a in $amis; do
   echo "deregistering image: ${a}"
   aws ec2 deregister-image --image-id ${a} --region ${REGION} --profile ${PROFILE}

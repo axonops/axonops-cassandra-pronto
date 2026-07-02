@@ -57,15 +57,6 @@ fi
 HOST_FILE="./hosts"
 SSH_ARGS="-F ./ssh_config"
 
-OPSCENTER_CONFIG_PATH=${CONFIGS}/${ACCOUNT_NAME}/${VPC_NAME}/opscenter-resources/opscenter-configs
-if [[ ! -d ${OPSCENTER_CONFIG_PATH} ]]; then
-  echo "WARNING:  No opscenter configs directory was found at this location:"
-  echo "  DIR: $(realpath --relative-to=${ROOT} ${OPSCENTER_CONFIG_PATH})"
-  OPSCENTER_CONFIG_PATH=${CONFIGS}/default-account/default-vpc/opscenter-resources/opscenter-configs
-  echo "Copying from the default config profile!  You should copy your own files for modification."
-  echo "  DIR: $(realpath --relative-to=${ROOT} ${OPSCENTER_CONFIG_PATH})"
-fi
-
 function parse_ssm_param()
 {
   echo "${1}" | jq -r '."'${2}'"'
@@ -73,13 +64,8 @@ function parse_ssm_param()
 
 function get_inputs()
 {
-  if [[ "${OPERATION}" = "attach-to-opscenter" ]]; then
-    # these vars are not needed when connecting to opscenter
-    return
-  fi
-
   # variables to fetch from ssm parameter store (max 10)
-  param_key_prefix="/dse/${ACCOUNT_NAME}/${VPC_NAME}/${CLUSTER_NAME}"
+  param_key_prefix="/cassandra/${ACCOUNT_NAME}/${VPC_NAME}/${CLUSTER_NAME}"
   declare -a param_keys=(
       "${param_key_prefix}/dc_name"
       "${param_key_prefix}/cassandra_seed_node_ips"
@@ -130,26 +116,6 @@ function prep_cassandra_action() {
   export ANSIBLE_HOST_KEY_CHECKING=false
 }
 
-function prep_opscenter_action() {
-  # fetch variable from ssm parameter store
-  opscenter_ip=$(aws ssm get-parameters --names "/dse/${ACCOUNT_NAME}/${VPC_NAME}/opscenter-resources/opscenter_primary_private_ip" \
-                  --query Parameters[0].Value --output text \
-                  --profile ${PROFILE} --region ${REGION})
-
-  echo "opscenter_ip: ${opscenter_ip}"
-
-  if grep -Fx -A 1 "[opscenter]" ${HOST_FILE} | grep -q "${opscenter_ip}"; then
-    echo "opscenter section already exists in host inventory"
-  else
-    # Create a new host list file
-    echo "[opscenter]" > ${HOST_FILE}
-    echo ${opscenter_ip} >> ${HOST_FILE}
-  fi
- 
-  cat ${HOST_FILE}
-  export ANSIBLE_HOST_KEY_CHECKING=false
-}
-
 get_inputs
 
 case ${OPERATION} in
@@ -160,27 +126,6 @@ case ${OPERATION} in
       -e "volume_size=${data_volume_size} stripes=${number_of_stripes} block_size=${raid_block_size} raid_level=${raid_level} \
       host_list=${HOST_IP}" \
       ./playbooks/cluster-mount-volumes.yml
-  ;;
-
-  "update-datastax-agent")
-    prep_cassandra_action
-    time ansible-playbook ./playbooks/cluster-update-datastax-agent.yml \
-      -i ${HOST_FILE} -T 600 --ssh-common-args="${SSH_ARGS}" \
-      -e "tfstate_bucket=${BUCKET} account_name=${ACCOUNT_NAME} vpc_name=${VPC_NAME} host_list=${HOST_IP}"
-  ;;
-
-  "attach-to-opscenter")
-    prep_opscenter_action
-    time ansible-playbook ./playbooks/opscenter-attach-cluster.yml \
-      -i ${HOST_FILE} -T 600 --ssh-common-args="${SSH_ARGS}" \
-      -e "tfstate_bucket=${BUCKET} target_cluster=${CLUSTER_NAME} opscenter_ip=${opscenter_ip} vpc_name=${VPC_NAME} account_name=${ACCOUNT_NAME}"
-  ;;
-
-  "install-alerts-dashboards")
-    prep_opscenter_action
-    time ansible-playbook ./playbooks/opscenter-install-alerts-dashboards.yml \
-      -i ${HOST_FILE} -T 600 --ssh-common-args="${SSH_ARGS}" \
-      -e "target_account=${ACCOUNT_NAME} target_vpc=${VPC_NAME} target_cluster=${CLUSTER_NAME} opscenter_ip=${opscenter_ip} tfstate_bucket=${BUCKET} opscenter_config_path=${OPSCENTER_CONFIG_PATH} region=${REGION}"
   ;;
 
   "unmount")
@@ -221,7 +166,7 @@ case ${OPERATION} in
 
   "init")
      first_seed=$(echo ${seed_list} | awk -F "," '{print $1}')
-     secret_location="/dse/${ACCOUNT_NAME}/${VPC_NAME}/${CLUSTER_NAME}/secrets"
+     secret_location="/cassandra/${ACCOUNT_NAME}/${VPC_NAME}/${CLUSTER_NAME}/secrets"
      prep_cassandra_action
      time ansible-playbook ./playbooks/cluster-init.yml \
        -i ./hosts -l ${first_seed} -T 600 --ssh-common-args="${SSH_ARGS}" \

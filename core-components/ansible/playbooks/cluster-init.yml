@@ -1,7 +1,7 @@
 ---
-# This playbook initializes the DSE application, and changes the default cassandra user password.
+# This playbook initializes the Apache Cassandra application, and changes the default cassandra user password.
 
-- name: initialize DSE application
+- name: initialize Apache Cassandra application
   gather_facts: false
   hosts:
     - all

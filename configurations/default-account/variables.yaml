@@ -14,11 +14,8 @@ PACKER_SUBNET_ID:           "<<< YOUR_AMI_BAKING_SUBNET_ID_HERE >>>"
 # source AMI to use as the baseline.  if not set, a suitable amzn2 image will be found when packer runs.
 PACKER_BASE_AMI_ID:         ""
 
-# versions of DSE and OpsCenter artifacts to install
-PACKER_DSE_FULL_VER:        "5.1.11-1"
-PACKER_DS_AGENT_VER:        "6.1.7-1"
-PACKER_OPSCENTER_FULL_VER:  "6.7.4-1"
-PACKER_DS_STUDIO_VER:       "6.7.0"
+# version of Apache Cassandra artifacts to install
+PACKER_CASSANDRA_FULL_VER:  "3.11.17-1"
 
 ##################################################
 # these vars are required for terraform deployments

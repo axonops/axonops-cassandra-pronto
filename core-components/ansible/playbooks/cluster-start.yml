@@ -1,7 +1,7 @@
 ---
-# This playbook starts the DSE service on the seed nodes, then the non-seeds, one at time.
+# This playbook starts the Cassandra service on the seed nodes, then the non-seeds, one at time.
 
-- name: start DSE service
+- name: start Cassandra service
   gather_facts: false
   hosts:
     - '{{ host_list }}'
@@ -18,12 +18,12 @@
 
     - debug: msg="{{ cas_vols_mounted.stdout }}"
 
-    - name: start DSE service
+    - name: start Cassandra service
       become: true
-      shell: service dse start
+      shell: systemctl start cassandra
       when: cas_vols_mounted.stdout == "2"
 
-    # 9142 = dse client port (ssl)
+    # 9142 = cassandra client port (ssl)
     - wait_for:
         port: 9142
         host: "{{ host_ip.stdout }}"

@@ -50,8 +50,6 @@ case "${CLUSTER_NAME}" in
     exit 0;;
   "vpc-resources")
     config_path="${ACCOUNT_NAME}/${VPC_NAME}/vpc-resources";;
-  "opscenter-resources")
-    config_path="${ACCOUNT_NAME}/${VPC_NAME}/opscenter-resources";;
   *)
     config_path="${ACCOUNT_NAME}/${VPC_NAME}/${CLUSTER_NAME}";;
 esac

@@ -1,5 +1,5 @@
 ###################
-# role and instance profile for DSE nodes
+# role and instance profile for Cassandra nodes
 ###################
 
 resource "aws_iam_role" "cassandra-role" {
@@ -13,29 +13,29 @@ resource "aws_iam_instance_profile" "cassandra-profile" {
 }
 
 ###################
-# policy granting DSE node access to SSM Parameter Store
+# policy granting Cassandra node access to SSM Parameter Store
 ###################
 
 resource "aws_iam_policy" "cassandra-ssm-policy" {
   depends_on  = [aws_iam_role.cassandra-role]
   name        = "${var.prefix}cassandra-ssm-policy${var.suffix}"
-  description = "Allow DSE instances access to parameter store"
+  description = "Allow Cassandra instances access to parameter store"
   policy      = data.aws_iam_policy_document.ssm-parameterstore-doc.json
 }
 
 resource "aws_iam_role_policy_attachment" "cassandra-ssm-attach" {
-  role        = aws_iam_role.cassandra-role.name
-  policy_arn  = aws_iam_policy.cassandra-ssm-policy.arn
+  role       = aws_iam_role.cassandra-role.name
+  policy_arn = aws_iam_policy.cassandra-ssm-policy.arn
 }
 
 ###################
-# policy granting DSE node read access to tfstate bucket
+# policy granting Cassandra node read access to tfstate bucket
 ###################
 
 resource "aws_iam_policy" "cassandra-readbucket-policy" {
-  depends_on  = [aws_iam_role.opscenter-role]
+  depends_on  = [aws_iam_role.cassandra-role]
   name        = "${var.prefix}cassandra-readbucket-policy${var.suffix}"
-  description = "Allow DSE instances read access to tfstate"
+  description = "Allow Cassandra instances read access to tfstate"
   policy      = data.aws_iam_policy_document.read-tfstate-doc.json
 }
 
@@ -45,12 +45,12 @@ resource "aws_iam_role_policy_attachment" "cassandra-readbucket-attach" {
 }
 
 ###################
-# policy granting DSE node scoped write access to tfstate bucket
+# policy granting Cassandra node scoped write access to tfstate bucket
 ###################
 
 data "aws_iam_policy_document" "cassandra-bucket-permissions-doc" {
   statement {
-    effect  = "Allow"
+    effect = "Allow"
     actions = [
       "s3:Put*"
     ]
@@ -60,7 +60,7 @@ data "aws_iam_policy_document" "cassandra-bucket-permissions-doc" {
     ]
   }
   statement {
-    effect  = "Allow"
+    effect = "Allow"
     actions = [
       "s3:DeleteObject"
     ]
@@ -73,7 +73,7 @@ data "aws_iam_policy_document" "cassandra-bucket-permissions-doc" {
 
 resource "aws_iam_policy" "cassandra-bucket-permissions-policy" {
   name        = "${var.prefix}cassandra-bucket-policy${var.suffix}"
-  description = "Allow DSE instances scoped write access to tfstate bucket"
+  description = "Allow Cassandra instances scoped write access to tfstate bucket"
   policy      = data.aws_iam_policy_document.cassandra-bucket-permissions-doc.json
 }
 
@@ -83,12 +83,12 @@ resource "aws_iam_role_policy_attachment" "cassandra-bucket-attach" {
 }
 
 ###################
-# policy granting DSE node permissions for bootstrap and self-heal
+# policy granting Cassandra node permissions for bootstrap and self-heal
 ###################
 
 resource "aws_iam_policy" "cassandra-bootstrap-policy" {
   name        = "${var.prefix}cassandra-bootstrap-policy${var.suffix}"
-  description = "Allow DSE instances to bootstrap"
+  description = "Allow Cassandra instances to bootstrap"
   policy      = data.aws_iam_policy_document.ec2-autoscaling-doc.json
 }
 

@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Removed
+
+- Removed DataStax OpsCenter support and DataStax Enterprise (DSE); repo now provisions Apache Cassandra 3.11.x clusters.
+
 # v1.0.0 (Thu Jun 18 2020)
 
 #### Initial Revision

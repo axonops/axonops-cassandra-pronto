@@ -1,7 +1,7 @@
 ---
-# This playbook stops the DSE service on the seed nodes, then the non-seeds, one at time.
+# This playbook stops the Cassandra service on the seed nodes, then the non-seeds, one at time.
 
-- name: stop DSE service
+- name: stop Cassandra service
   gather_facts: false
   hosts:
     - '{{ host_list }}'
@@ -12,7 +12,7 @@
       shell: "nodetool drain"
       ignore_errors: true
 
-    - name: stop DSE service
+    - name: stop Cassandra service
       service:
-        name: dse
+        name: cassandra
         state: stopped

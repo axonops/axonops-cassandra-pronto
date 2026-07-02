@@ -1,7 +1,7 @@
 ---
-# This playbook restarts the DSE service on the seed nodes, then the non-seeds, one at time.
+# This playbook restarts the Cassandra service on the seed nodes, then the non-seeds, one at time.
 
-- name: restart DSE service
+- name: restart Cassandra service
   gather_facts: false
   hosts:
     - '{{ host_list }}'
@@ -31,13 +31,13 @@
       shell: "nodetool drain"
       ignore_errors: true
 
-    - name: restart DSE service
+    - name: restart Cassandra service
       service:
-        name: dse
+        name: cassandra
         state: restarted
       when:  cas_vols_mounted.stdout == "2"
 
-    # 9142 = dse client port (ssl)
+    # 9142 = cassandra client port (ssl)
     - wait_for:
         port: 9142
         host: "{{ host_ip.stdout }}"
@@ -50,12 +50,6 @@
       until: result.stdout.find("UN") != -1
       retries: 30
       delay: 10
-
-    - name: restart datastax agent
-      become: true
-      service:
-        name: datastax-agent
-        state: restarted
 
     - name: sleep for 3 min
       become: true

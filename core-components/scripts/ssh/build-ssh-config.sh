@@ -74,7 +74,7 @@ echo "Generating ssh_config for cluster '${cluster_name}'..."
 
 # get the VPC ID for the cluster from Parameter Store
 VPC_ID=$(${AWS_CMD} ssm get-parameters \
-  --names "/dse/${account_name}/${vpc_name}/vpc-resources/vpc_id" \
+  --names "/cassandra/${account_name}/${vpc_name}/vpc-resources/vpc_id" \
   --query "Parameters[0].Value" --output text)
 
 echo "   - VPC:       ${VPC_ID}"
@@ -96,11 +96,8 @@ NON_SEED_IP=$(${AWS_CMD} ec2 describe-network-interfaces \
 echo "   - Non-seeds: ${NON_SEED_IP}"
 
 if [[ "${SEED_IP}" == "" ]]; then
-  if [[ ${cluster_name} != "opscenter-resources" ]]; then
-    # opscenter won't have a seed IP; otherwise, require it
-    echo "No seed node IPs found, exiting."
-    exit 1
-  fi
+  echo "No seed node IPs found, exiting."
+  exit 1
 fi
 
 sc=$(echo ${SEED_IP} | wc -w | tr -d ' ')

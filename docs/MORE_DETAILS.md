@@ -2,10 +2,10 @@
 
 ### Setup Notes
 
-* **Can I install DSE artifacts without credentials?**  _Once upon a time_, DataStax Enterprise RPM artifacts weren't
-  downloadable without a "DataStax Academy" login.  However, artifacts are now
-  [publicly accessible](https://docs.datastax.com/en/install/6.7/install/installRHELdse.html), so the Packer AMI bake
-  simply runs `yum install` after adding the appropriate repository.  No credentials needed.
+* **Can I install Apache Cassandra artifacts without credentials?**  Yes. Apache Cassandra packages are
+  [publicly accessible](https://cassandra.apache.org/doc/latest/cassandra/getting_started/installing.html) from the
+  official ASF repositories, so the Packer AMI bake simply runs `yum install` after adding the appropriate repository.
+  No credentials needed.
 * **Why Terraform 0.12.24?**  This repo operates using what is (at the time of this writing) the latest version of Terraform.
   Upgrading to new Terraform versions is generally a fairly backwards-incompatible process, as your state files will be 
   written in a way that prevents you from using any old versions.  Given that, upgrading to newer versions of Terraform 
@@ -17,18 +17,17 @@
 * **Do I need to bake AMIs and deploy in the same account?**  No, but this repo currently assumes you will.  If you **aren't**
   baking and deploying AMIs in the same account, your images will need to be **shared** with the target deployment account.
   This can be done manually in the EC2 console, or automatically by Packer during the baking process.
-  * To do it with Packer:  modify the [JSON file](../core-components/packer/cassandra/dse-cassandra-ami.json) in the packer
+  * To do it with Packer:  modify the [JSON file](../core-components/packer/cassandra/cassandra-ami.json) in the packer
     dir, and share to other accounts with [ami_users](https://www.packer.io/docs/builders/amazon-ebs.html#ami_users), copy to
     other regions with [ami_regions](https://www.packer.io/docs/builders/amazon-ebs.html#ami_regions).
 * **I see a "sudo pip install" in the Packer recipe.**  Yes, that's [gross](https://dev.to/elabftw/stop-using-sudo-pip-install-52mn).
   Packer installs everything as `ec2-user`, while cloud-init scripts are run as `root`.  So currently, we bypass any permission
   issues by explicitly installing pip packages for both users.  Fixing this is a TODO.
 * **Can I create clusters in multiple VPCs?**  Yes, within the same account or across accounts; however, if you intend to
-  connect two clusters together (for DR/replication) or monitor clusters across VPCs with the same OpsCenter, you'll require
+  connect two clusters together (for DR/replication), you'll require
   either [VPC peering](https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html),
   a [Transit Gateway](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-getting-started.html),
   or [PrivateLink](https://docs.aws.amazon.com/vpc/latest/userguide/endpoint-service.html) to route between the VPC CIDRs.
-* **Can I use this repo to deploy (non-DSE) Apache Cassandra?**  Not yet, but we plan to take a crack at that next.
 
 ### Packer Debugging
 
@@ -54,12 +53,12 @@
     * ![IP](./images/cassandra_ips.png)
   * To check the logs on the node, `sudo grep "cloud-init" /var/log/messages`
   * To check if bootstrap ran successfully, `cat /var/log/bootstrap_cassandra.log`
-  * To retry any bootstrap actions, `cd /opt/dse/cassandra/scripts`
-    * The main script can be run with `bootstrap.sh 1` (the "1" tells the script to start the DSE service)
+  * To retry any bootstrap actions, `cd /opt/cassandra/scripts`
+    * The main script can be run with `bootstrap.sh 1` (the "1" tells the script to start the Cassandra service)
 
 ### Restack IP Conflict (known issue)
 
-Sometimes during restack operations, DSE will fail to start with the following exception:
+Sometimes during restack operations, Cassandra will fail to start with the following exception:
 ```
 ERROR [main] 2020-03-11 23:56:03,442  CassandraDaemon.java:829 - Exception encountered during startup
 java.lang.RuntimeException: A node with address /${YOUR_IP} already exists, cancelling join. Use cassandra.replace_address if you want to replace this node.
@@ -70,11 +69,11 @@ The current theory (?) is that the node is terminated before `nodetool drain` co
 a mismatch in the "system" keyspace between the dead node's EBS volume and the rest of the cluster.
 
 The resolution (workaround) is to add this option to your detailed JVM options and restart manually.
-(See the notes on the `replace_address` option in [step 11 here](https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsReplaceNode.html).)
+(See the notes on the `replace_address` option in the [Apache Cassandra 3.11 operations docs](https://cassandra.apache.org/doc/3.11/cassandra/operating/topo_changes.html#replacing-a-dead-node).)
 ```
 -Dcassandra.replace_address=${YOUR_IP}
 ```
-**Do not** add this to your startup flags by default, however; it causes the DSE cluster to move data from replicas on other
+**Do not** add this to your startup flags by default, however; it causes the Cassandra cluster to move data from replicas on other
 nodes, a process which can take many hours (despite the fact that the data is already present on attached EBS volumes).
 
 ### Bootstrap Lock File (known issue)
@@ -101,7 +100,7 @@ Found a lock file in s3://your-tfstate-bucket-name-here/your-cluster-name-here/f
 
 ### Unconnected Cluster
 
-* Once the instance is up and running, and you've managed to SSH in, `nodetool` should indicate whether DSE is in an up-normal
+* Once the instance is up and running, and you've managed to SSH in, `nodetool` should indicate whether Cassandra is in an up-normal
   ("UN") state on each node:
 ```
 [ec2-user@ip-10-0-0-104 ~]$ nodetool status
@@ -125,8 +124,8 @@ Note: Non-system keyspaces don't have the same replication settings, effective o
       * `s3://${TFSTATE_BUCKET}/${CLUSTER_NAME}/files/certs`
       * `s3://${TFSTATE_BUCKET}/${CLUSTER_NAME}/files/keystores`
     * Once this is done, either terminate/relaunch the other nodes entirely, or just SSH and run the bootstrap manually:
-      * `sudo sh /opt/dse/cassandra/scripts/bootstrap.sh 1`
-      * `sudo service dse restart`
+      * `sudo sh /opt/cassandra/scripts/bootstrap.sh 1`
+      * `sudo service cassandra restart`
     * This will pull the single remaining cert/keystore from the tfstate bucket, and now all nodes should share the same
       certs, and thus be able to connect.
 
@@ -143,17 +142,7 @@ aws s3 cp ./certs/ca-key s3://${BUCKET}/${account_name}/${vpc_name}/${cluster}/f
 aws s3 cp ./certs/ca-cert s3://${BUCKET}/${account_name}/${vpc_name}/${cluster}/files/certs/ca-cert  --region ${region}
 aws s3 cp ./keystores/server-truststore.jks s3://${BUCKET}/${account_name}/${vpc_name}/${cluster}/files/keystores/server-truststore.jks --region ${region}
 ```
-You will need to run the restack cluster and re-register your cluster with opscenter:
+You will need to restack the cluster:
 ```
 ./operations.sh -a [account name] -v [vpc name] -c [cluster name] -o restack
-./operations.sh -a [account name] -v [vpc name] -c [cluster name] -o attach-to-opscenter
 ```
-
-* Opscenter:
-
-```
-aws acm import-certificate --certificate file://opscenter.crt --private-key file://opscenter.key --region us-west-2
-```
-You will need to update `ssl_certificate_id ` in your configuration folder in
-`[account name]/[vpc name]/opscenter-resources/opscenter.tfvars`, then restack opscenter by redeploying the module and
-terminating the instance.

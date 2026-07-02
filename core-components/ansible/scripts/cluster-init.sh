@@ -17,7 +17,7 @@ else
     echo "Password for cassandra user already updated"
   else
     echo "ERROR: Unable to access cqlsh via ssl with either the default or provided password (from ${secrets_s3_location})."
-    echo " - This may indicate a problem with the password, or an issue with ssl certs, or it may indicate DSE isn't running."
+    echo " - This may indicate a problem with the password, or an issue with ssl certs, or it may indicate Cassandra isn't running."
     return 1
   fi
 fi

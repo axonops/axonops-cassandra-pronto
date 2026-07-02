@@ -31,7 +31,7 @@ variable "datacenter" {}
 variable "sg_ops_nodes_to_cas" {}
 variable "sg_bas_nodes_to_all" {}
 
-variable "dse_nodes_per_az" {}
+variable "cassandra_nodes_per_az" {}
 
 variable "cluster_subnet_cidrs" { type = list(string) }
 variable "cluster_subnet_ids" { type = list(string) }
@@ -39,7 +39,7 @@ variable "cluster_subnet_ids" { type = list(string) }
 variable "graph_enabled" { default = 0 }
 variable "solr_enabled" { default = 0 }
 variable "spark_enabled" { default = 0 }
-variable "auto_start_dse" {}
+variable "auto_start_cassandra" {}
 
 # created by account-resources layer
 variable "cassandra_profile_arn" { type = string }
@@ -50,4 +50,4 @@ variable "root_volume_size" {}
 variable "root_volume_iops" {}
 
 # tags
-variable "ec2_tags"   {}
+variable "ec2_tags" {}

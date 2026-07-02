@@ -9,14 +9,14 @@ variable "vpc_name" {}
 variable "cluster_name" {}
 
 variable "ami_owner_id" {}
-variable "ami_prefix" { default = "dse-cassandra" }
+variable "ami_prefix" { default = "cassandra" }
 variable "instance_type" { default = "m5.2xlarge" }
 
 variable "account_id" {}
 variable "availability_zones" { type = list(string) }
 
-variable "dse_nodes_per_az" { default = 1 }
-variable "auto_start_dse" { default = 1 }
+variable "cassandra_nodes_per_az" { default = 1 }
+variable "auto_start_cassandra" { default = 1 }
 variable "graph_enabled" { default = 0 }
 variable "solr_enabled" { default = 0 }
 variable "spark_enabled" { default = 0 }

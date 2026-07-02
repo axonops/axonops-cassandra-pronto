@@ -4,19 +4,19 @@
 
 data "aws_iam_policy_document" "ssm-parameterstore-doc" {
   statement {
-    effect  = "Allow"
+    effect = "Allow"
     actions = [
       "ssm:DescribeParameters"
     ]
     resources = ["*"]
   }
   statement {
-    effect  = "Allow"
+    effect = "Allow"
     actions = [
       "ssm:GetParameters",
       "ssm:GetParametersByPath"
     ]
-    resources = ["arn:aws:ssm:*:${var.account_id}:parameter/dse*"]
+    resources = ["arn:aws:ssm:*:${var.account_id}:parameter/cassandra*"]
   }
 }
 
@@ -26,7 +26,7 @@ data "aws_iam_policy_document" "ssm-parameterstore-doc" {
 
 data "aws_iam_policy_document" "ec2-autoscaling-doc" {
   statement {
-    effect  = "Allow"
+    effect = "Allow"
     actions = [
       "autoscaling:AttachInstances",
       "autoscaling:DescribeAutoScalingGroups",
@@ -37,7 +37,7 @@ data "aws_iam_policy_document" "ec2-autoscaling-doc" {
     resources = ["*"]
   }
   statement {
-    effect  = "Allow"
+    effect = "Allow"
     actions = [
       "ec2:AttachNetworkInterface",
       "ec2:AttachVolume",
@@ -60,7 +60,7 @@ data "aws_iam_policy_document" "ec2-autoscaling-doc" {
 
 data "aws_iam_policy_document" "read-tfstate-doc" {
   statement {
-    effect  = "Allow"
+    effect = "Allow"
     actions = [
       "s3:Get*",
       "s3:ListObjects*",

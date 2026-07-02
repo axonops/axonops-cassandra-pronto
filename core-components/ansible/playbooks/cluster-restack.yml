@@ -2,11 +2,11 @@
 # This playbook restacks the cluster, performing the following actions on one node at a time:
 #     1. Drain and stop the current node
 #     2. Terminate the old node
-#     3. (cloud-init bootstrap) => new node will initialize, attaching ENI and storage, starting DSE service
+#     3. (cloud-init bootstrap) => new node will initialize, attaching ENI and storage, starting Cassandra service
 #     4. Wait for UN (up normal)
 #     5. Sleep 5 minutes, allowing the cluster time to settle before moving on to next node
 
-- name: restack DSE cluster
+- name: restack Cassandra cluster
   gather_facts: false
   any_errors_fatal: true
   hosts:
@@ -37,9 +37,9 @@
       shell: "nodetool drain"
       ignore_errors: true
 
-    - name: 2 Stop the DSE service
+    - name: 2 Stop the Cassandra service
       service:
-        name: dse
+        name: cassandra
         state: stopped
       ignore_errors: true
 
@@ -52,7 +52,7 @@
 
     - name: 4 Detach the storage from current
       become: true
-      shell: "/opt/dse/cassandra/scripts/cas_ebs_mgr.py -a {{ account }} -r {{ region }} -c {{ cluster }} -o detach -l {{ inventory_hostname }}"
+      shell: "/opt/cassandra/scripts/cas_ebs_mgr.py -a {{ account }} -r {{ region }} -c {{ cluster }} -o detach -l {{ inventory_hostname }}"
       register: result_detach_storage
 
     - name: 5 Assume role for local action
@@ -76,7 +76,7 @@
       register: result
     - debug: msg="{{ result.stdout }}"
 
-    # 9142 = dse client port (ssl)
+    # 9142 = cassandra client port (ssl)
     - wait_for:
         port: 9142
         host: "{{ host_ip.stdout }}"

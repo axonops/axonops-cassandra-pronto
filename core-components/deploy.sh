@@ -26,7 +26,7 @@ usage() {
   echo "    -v : [Required] vpc name"
   echo "    -c : [Required] cluster name (optional unless deploying cluster layer, then required)"
   echo "    -m : [Required] command -> apply | plan | show | destroy"
-  echo "    -l : layer -> account | vpc | cluster | opscenter (default: all)"
+  echo "    -l : layer -> account | vpc | cluster (default: all)"
   echo "    -k : Keep build dir after terraform runs."
   echo "    -h : Display this help message."
 }
@@ -66,10 +66,6 @@ case "${LAYER}" in
   "account")
     cluster_name="account-resources"
     CONFIG_PATH="${account_name}/account-resources"
-    ;;
-  "opscenter")
-    cluster_name="opscenter-resources"
-    CONFIG_PATH="${account_name}/${vpc_name}/opscenter-resources"
     ;;
   "cluster")
     # cluster_name only required when deploying cluster layer
@@ -149,7 +145,7 @@ fi
 ################################
 
 echo ""
-echo "DSE cluster:       ${cluster_name}"
+echo "Cassandra cluster: ${cluster_name}"
 echo "Input var file:    $(realpath --relative-to=. ${INPUT_VAR_FILE})"
 echo "State bucket:      ${TFSTATE}"
 if [[ "${LAYER}" != "" ]]; then
@@ -179,10 +175,6 @@ if [[ "${LAYER}" == "" ]] || [[ "${LAYER}" == "cluster" ]]; then
   popd > /dev/null
 
   terraform "cluster"
-fi
-
-if [[ "${LAYER}" == "" ]] || [[ "${LAYER}" == "opscenter" ]]; then
-  terraform "opscenter"
 fi
 
 popd > /dev/null

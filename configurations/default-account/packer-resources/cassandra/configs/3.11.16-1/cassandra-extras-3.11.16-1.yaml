@@ -1,0 +1,10 @@
+# Placeholder for additional Apache Cassandra 3.11.16 configuration.
+#
+# The equivalent file shipped by DataStax Enterprise (dse.yaml) held DSE-only
+# settings (DSE Search, DSE Graph, DSE Analytics/Spark, DSE Advanced
+# Replication, Kerberos/LDAP authentication, DSE audit logging, DSEFS, KMIP
+# key management). None of those subsystems exist in Apache Cassandra OSS, so
+# there is no equivalent configuration to carry over.
+#
+# All genuinely OSS-relevant settings (authentication, authorization,
+# encryption, timeouts, caches, etc.) live in cassandra-3.11.16-1.yaml.

@@ -43,7 +43,7 @@ usage() {
   echo "    -a : account name"
   echo "    -v : vpc name"
   echo "    -c : cluster name"
-  echo "    -l : layer -> vpc, account, cluster, opscenter"
+  echo "    -l : layer -> vpc, account, cluster"
   echo "    -t : action -> plan, apply, show"
   echo "    -d : credentials file"
   echo "    -r : name of assumed_role"
@@ -114,8 +114,6 @@ case "${layer}" in
     path="${account_name}/${vpc_name}/vpc-resources/vpc";;
   "cluster-resources")
     path="${account_name}/${vpc_name}/${cluster_name}/cluster";;
-  "opscenter-resources")
-    path="${account_name}/${vpc_name}/opscenter-resources/opscenter";;
   *)
     usage; exit 1;;
 esac
@@ -286,7 +284,7 @@ echo no | terraform init -reconfigure
 role_arn="arn:aws:iam::${account_id}:role/${assumed_role}"
 
 cidr_tfvar_op=""
-if [ "${layer}" ==  "vpc-resources" ] || [ "${layer}" ==  "opscenter-resources" ]; then
+if [ "${layer}" ==  "vpc-resources" ]; then
   cidr_tfvar_op="-var-file=${cidr_vars}"
 fi
 
@@ -294,12 +292,10 @@ fi
 account_tags="$CONFIGS/$account_name/account-resources/tags.tfvars"
 vpc_tags="$CONFIGS/$account_name/$vpc_name/vpc-resources/tags.tfvars"
 cluster_tags="$CONFIGS/$account_name/$vpc_name/$cluster_name/tags.tfvars"
-opscenter_tags="$CONFIGS/$account_name/$vpc_name/opscenter-resources/tags.tfvars"
 
 account_tags_op="-var-file=${account_tags}"
 vpc_tags_op="-var-file=${vpc_tags}"
 cluster_tags_op="-var-file=${cluster_tags}"
-opscenter_tags_op="-var-file=${opscenter_tags}"
 
 tags_op=""
 if [ "${layer}" == "account-resources" ]; then
@@ -310,9 +306,6 @@ if [ "${layer}" == "vpc-resources" ]; then
 fi
 if [ "${layer}" == "cluster-resources" ]; then
   tags_op="${account_tags_op} ${vpc_tags_op} ${cluster_tags_op}"
-fi
-if [ "${layer}" == "opscenter-resources" ]; then
-  tags_op="${account_tags_op} ${vpc_tags_op} ${opscenter_tags_op}"
 fi
 
 VARS="-var-file=${terraform_var_file} \

@@ -14,7 +14,7 @@ REGION=$6
 region=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/\(.*\)[a-z]/\1/')
 
 # Download secrets file
-ssm_secrets_path="/dse/${ACCOUNT_NAME}/${VPC_NAME}/${CLUSTER_NAME}/secrets"
+ssm_secrets_path="/cassandra/${ACCOUNT_NAME}/${VPC_NAME}/${CLUSTER_NAME}/secrets"
 
 keystore_pass=$(aws --region ${REGION} ssm get-parameter --with-decryption --name "${ssm_secrets_path}/keystore_pass" | jq -r '.[].Value' | base64 -d)
 truststore_pass=$(aws --region ${REGION} ssm get-parameter --with-decryption --name "${ssm_secrets_path}/truststore_pass" | jq -r '.[].Value' | base64 -d)
@@ -31,11 +31,11 @@ fi
 
 # Download ca-cert and ca-key from S3 if exists
 mkdir -p ./{certs,keystores}
-mkdir -p /etc/dse/cassandra/{keystores,keys}
+mkdir -p /etc/cassandra/{keystores,keys}
 rm -fr ./certs/*
 rm -fr ./keystores/*
-rm -fr /etc/dse/cassandra/keystores/*
-rm -fr /etc/dse/cassandra/certs/*
+rm -fr /etc/cassandra/keystores/*
+rm -fr /etc/cassandra/certs/*
 
 host=`ifconfig eth1 | grep -w "inet" | awk '{print $2}'`
 
@@ -138,15 +138,15 @@ else
 fi
 
 # copy the files
-sudo cp ./keystores/${host}-server-keystore.jks /etc/dse/cassandra/keystores/server-keystore.jks
-sudo cp ./keystores/server-truststore.jks /etc/dse/cassandra/keystores/server-truststore.jks
+sudo cp ./keystores/${host}-server-keystore.jks /etc/cassandra/keystores/server-keystore.jks
+sudo cp ./keystores/server-truststore.jks /etc/cassandra/keystores/server-truststore.jks
 
 # prepare keystores
-sudo chown cassandra:cassandra -R /etc/dse/cassandra/keystores/
-sudo cp ./certs/* /etc/dse/cassandra/keys/
-sudo chown -R cassandra:cassandra  /etc/dse/cassandra/keys
-sudo chmod -R a+rx /etc/dse/cassandra/keys
-sudo chmod -R a+rx /etc/dse/cassandra/keystores
+sudo chown cassandra:cassandra -R /etc/cassandra/keystores/
+sudo cp ./certs/* /etc/cassandra/keys/
+sudo chown -R cassandra:cassandra  /etc/cassandra/keys
+sudo chmod -R a+rx /etc/cassandra/keys
+sudo chmod -R a+rx /etc/cassandra/keystores
 
 # update the cassandra_cqlshrc file
 mkdir -p /home/ansible/.cassandra
