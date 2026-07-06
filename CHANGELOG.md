@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+### Added
+
+- README now documents Java installation (Zulu 8), Terraform deployment with optional cross-account assumes-role, AMI baking commands, SSM Parameter Store configuration (non-secret config path vs. secrets path with base64 encoding), secrets initialization workflow, SSH access via bastion, and cluster health verification via `nodetool status`.
+- AxonOps branding: README now includes AxonOps logo header and contact section.
+
 ### Fixed
 
 - Terraform: migrated deprecated `aws_launch_configuration`, `template_file`/`template_cloudinit_config`, `map()`, and `aws_subnet_ids` usages to their current equivalents (`aws_launch_template`, `templatefile()`+`hashicorp/cloudinit`, `tomap()`, `aws_subnets`); pinned provider versions; made `role_arn` optional throughout for same-account deploys.
@@ -8,7 +13,8 @@
 - Packer/bootstrap scripts: added IMDSv2 token headers to all EC2 metadata `curl` calls (required now that `HttpTokens=required` is enforced), fixed `/etc/cassandra` vs `/etc/cassandra/conf` path bugs, and rewrote `enable_eth1.sh` to support Amazon Linux 2023's `amazon-ec2-net-utils` networking (predictable `ensN` interface naming) alongside the legacy AL2/RHEL `ifup`/`ifdown` path.
 - `bake-ami.sh`: tightened the base AL2023 AMI lookup filter (was matching the `ecs-neuron-hvm` specialty variant instead of the plain base image).
 - `cas_ebs_mgr.py`: added support for `gp3` EBS volumes (previously only `gp2`/`io1` were handled, causing a crash on `gp3`).
-- IAM: added the missing `ssm:GetParameter` (singular) action needed by `bootstrap.sh`'s keystore/truststore password retrieval.
+- IAM: added the missing `ssm:GetParameter` (singular) action needed by `bootstrap.sh`'s keystore/truststore password retrieval from the `/cassandra/<account>/<vpc>/<cluster>/secrets/` path.
+- Docs: clarified the SSM Parameter Store split (non-secret config at `/cassandra/<account>/<vpc>/<cluster>/`, secrets at `/cassandra/<account>/<vpc>/<cluster>/secrets/`) — `axon_agent_server_host`/`axon_agent_server_port` belong on the plain config path, not under `secrets/`; putting them under `secrets/` is silently ignored and falls back to the AxonOps SaaS default `agents.axonops.cloud:443`. `bootstrap.sh` itself is unchanged (behavior was already correct); this was a one-off operator mistake when writing the SSM params.
 - Cassandra AMI bake: switched Java installation to Zulu (`java_use_zulu: true` in `bake-cassandra.yml`, with `cassandra_version` passed through so the `axonops.axonops.java` role selects Zulu 8) — the prior `java-1.8.0-openjdk-headless` package name doesn't resolve on AL2023, silently leaving Java 17 as the system default and crashing Cassandra 3.11 (`ThreadPriorityPolicy=42` rejected by JDK17's stricter flag validation).
 - `cassandra-3.11.19-1.yaml` template: removed five Cassandra 4.x-only config keys (`allocate_tokens_for_local_replication_factor`, `aggregated_request_timeout_in_ms`, `native_transport_keepalive`, `concurrent_materialized_view_builders`, `native_transport_address`) that Cassandra 3.11.19 rejects at startup.
 

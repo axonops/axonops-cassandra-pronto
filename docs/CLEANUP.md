@@ -24,6 +24,28 @@ Then delete the bucket itself:
 $ aws --profile ${PROFILE} s3 rb s3://${BUCKET_NAME}
 ```
 
+### 2. Delete NAT Gateway and EIP (if using shared VPC)
+
+If you deployed to a shared/existing VPC (not a Terraform-managed one), a NAT Gateway and Elastic IP were created to provide
+data subnet instances with egress for AWS API calls. These incur hourly charges and should be cleaned up first.
+
+Terraform destroy will not remove these resources if the VPC itself is managed outside this project. Delete them manually:
+```
+# get the allocation ID of the Cassandra NAT EIP
+ALLOC_ID=$(aws ec2 describe-addresses --filters "Name=tag:Name,Values=cassandra-nat" --query 'Addresses[0].AllocationId' --region ${REGION} --profile ${PROFILE} --output text)
+
+# disassociate the NAT Gateway (if not automatically cleaned up by the route table deletion)
+aws ec2 delete-nat-gateway \
+  --nat-gateway-id ${NAT_GW_ID} \
+  --region ${REGION} --profile ${PROFILE}
+
+# wait for NAT Gateway to be deleted (may take a minute), then release the EIP
+sleep 30
+aws ec2 release-address \
+  --allocation-id ${ALLOC_ID} \
+  --region ${REGION} --profile ${PROFILE}
+```
+
 ### 3. Delete EBS Volumes
 
 EBS volumes are not created by Terraform, they're created (or located) and attached by the bootstrap process that runs on
