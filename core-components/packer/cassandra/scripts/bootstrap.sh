@@ -2,8 +2,11 @@
 set -xe
 
 AUTO_START_CASSANDRA=${1}
-PRIVATE_IP=$(curl -L 169.254.169.254/latest/meta-data/local-ipv4)
-REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/\(.*\)[a-z]/\1/')
+
+# IMDSv2 is enforced (HttpTokens=required) - metadata requests must carry a session token
+IMDS_TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+PRIVATE_IP=$(curl -s -H "X-aws-ec2-metadata-token: ${IMDS_TOKEN}" 169.254.169.254/latest/meta-data/local-ipv4)
+REGION=$(curl -s -H "X-aws-ec2-metadata-token: ${IMDS_TOKEN}" http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/\(.*\)[a-z]/\1/')
 
 function parse_ssm_param()
 {
@@ -37,6 +40,8 @@ function get_inputs()
       "${param_key_prefix}/aio_enabled"
       "${param_key_prefix}/max_queued_native_transport_requests"
       "${param_key_prefix}/native_transport_max_threads"
+      "${param_key_prefix}/axon_agent_server_host"
+      "${param_key_prefix}/axon_agent_server_port"
   )
 
   # get them all at once, convert to key:value map
@@ -59,6 +64,8 @@ function get_inputs()
   aio_enabled=$(                          parse_ssm_param "${param_values}" "${param_key_prefix}/aio_enabled")
   max_queued_native_transport_requests=$( parse_ssm_param "${param_values}" "${param_key_prefix}/max_queued_native_transport_requests")
   native_transport_max_threads=$(         parse_ssm_param "${param_values}" "${param_key_prefix}/native_transport_max_threads")
+  axon_agent_server_host=$(               parse_ssm_param "${param_values}" "${param_key_prefix}/axon_agent_server_host")
+  axon_agent_server_port=$(               parse_ssm_param "${param_values}" "${param_key_prefix}/axon_agent_server_port")
   set -x
 
   # set default value if not set
@@ -66,11 +73,25 @@ function get_inputs()
     commitlog_iops=${iops}
   fi
 
+  # default to AxonOps SaaS if no self-hosted axon-server was configured
+  if [[ ${axon_agent_server_host} == "null" ]]; then
+    axon_agent_server_host="agents.axonops.cloud"
+  fi
+  if [[ ${axon_agent_server_port} == "null" ]]; then
+    axon_agent_server_port="443"
+  fi
+
   # secrets are stored in parameter store
   artifact_path="${account_name}/${vpc_name}/${cluster}/files"
   secrets_path="/cassandra/${account_name}/${vpc_name}/${cluster}/secrets"
   keystore_pass=$(aws --region ${REGION} ssm get-parameter --with-decryption --name "${secrets_path}/keystore_pass" | jq -r '.[].Value' | base64 -d)
   truststore_pass=$(aws --region ${REGION} ssm get-parameter --with-decryption --name "${secrets_path}/truststore_pass" | jq -r '.[].Value' | base64 -d)
+
+  # axon-agent identity: org (tenant) name and auth key are both secret
+  set +e
+  axon_agent_org=$(aws --region ${REGION} ssm get-parameter --with-decryption --name "${secrets_path}/axon_agent_org" 2>/dev/null | jq -r '.[].Value' | base64 -d)
+  axon_agent_key=$(aws --region ${REGION} ssm get-parameter --with-decryption --name "${secrets_path}/axon_agent_key" 2>/dev/null | jq -r '.[].Value' | base64 -d)
+  set -e
 }
 
 function attach_network()
@@ -80,8 +101,7 @@ function attach_network()
   echo "CWD: $PWD"
 
   ./cas_eni_mgr.py -r ${REGION} -a ${account} -c ${cluster} -o attach -n ${PRIVATE_IP}
-  sudo ./enable_eth1.sh
-  PRIVATE_IP=`ifconfig eth1 | grep -w "inet" | awk '{print $2}'`
+  PRIVATE_IP=`sudo ./enable_eth1.sh`
 }
 
 function attach_storage()
@@ -111,7 +131,7 @@ function setup_keys()
   echo "USER: `whoami`"
   echo "CWD: $PWD"
   if [[ ${AUTO_START_CASSANDRA} = 1 ]]; then
-    sudo ./gen_server_keystores.sh ${tfstate} ${artifact_path} ${account_name} ${vpc_name} ${cluster} ${REGION}
+    sudo ./gen_server_keystores.sh ${tfstate} ${artifact_path} ${account_name} ${vpc_name} ${cluster} ${REGION} ${PRIVATE_IP}
   fi
 }
 
@@ -122,41 +142,35 @@ function update_cassandra_config()
   echo "CWD: $PWD"
 
   ############################
-  # cassandra configs
-  # NOTE: will sed the entire line regardless of expected ##TOKEN## - in case
-  # someone brings in a clean config file with no tokens present.
+  # cassandra.yaml - rendered from the repo's own template (packer-resources/
+  # cassandra/configs/<ver>/cassandra-<ver>.yaml, baked into the AMI at
+  # /opt/cassandra/scripts/cassandra.yaml.tmpl) via envsubst, replacing the
+  # RPM-shipped default. Only the listed vars are substituted - everything
+  # else in the template (e.g. literal $CASSANDRA_HOME in comments) is left as-is.
   ############################
 
-  file="/etc/cassandra/cassandra.yaml"
+  file="/etc/cassandra/conf/cassandra.yaml"
 
-  sudo sed -i -r "s/seeds:.*/seeds: \"${seeds}\"/g" ${file}
-  sudo sed -i -r "s/cluster_name:.*/cluster_name: \"${cluster}\"/g" ${file}
+  export CLUSTER_NAME="${cluster}"
+  export SEED_NODES="${seeds}"
+  export PRIVATE_IP="${PRIVATE_IP}"
+  export KEYSTORE_PASS="${keystore_pass}"
+  export TRUSTSTORE_PASS="${truststore_pass}"
+  export NUM_TOKENS="${num_tokens:-16}"
 
-  sudo sed -i -r "s/^listen_address:.*/listen_address: ${PRIVATE_IP}/g" ${file}
-  sudo sed -i -r "s/^native_transport_address:.*/native_transport_address: ${PRIVATE_IP}/g" ${file}
-  sudo sed -i -r "s/^rpc_address:.*/rpc_address: ${PRIVATE_IP}/g" ${file}
-  sudo sed -i -r "s/^broadcast_rpc_address:.*/broadcast_rpc_address: ${PRIVATE_IP}/g" ${file}
+  envsubst '${CLUSTER_NAME} ${SEED_NODES} ${PRIVATE_IP} ${KEYSTORE_PASS} ${TRUSTSTORE_PASS} ${NUM_TOKENS}' \
+    < /opt/cassandra/scripts/cassandra.yaml.tmpl | \
+    /usr/local/bin/vals eval - | \
+    sudo tee ${file} > /dev/null
 
-  # replace keystore_password & truststore_password in "server_encryption_options" section (section must end with empty line)
-  sudo sed -i -r "/server_encryption_options/,/^$/ s/keystore_password:.*/keystore_password: ${keystore_pass}/" ${file}
-  sudo sed -i -r "/server_encryption_options/,/^$/ s/truststore_password:.*/truststore_password: ${truststore_pass}/" ${file}
-
-  # replace keystore_password & truststore_password in "client_encryption_options" section (section must end with empty line)
-  sudo sed -i -r "/client_encryption_options/,/^$/ s/keystore_password:.*/keystore_password: ${keystore_pass}/" ${file}
-  sudo sed -i -r "/client_encryption_options/,/^$/ s/truststore_password:.*/truststore_password: ${truststore_pass}/" ${file}
-
-  if [[ ! -z "${num_tokens// }" ]]; then
-    sed -i -e "s/^num_tokens:.*/num_tokens: ${num_tokens}/" ${file}
-  fi
-
-  file="/etc/cassandra/cassandra-env.sh"
+  file="/etc/cassandra/conf/cassandra-env.sh"
 
   sudo sed -i -r "s/java.rmi.server.hostname=.*\"/java.rmi.server.hostname=${PRIVATE_IP}\"/g" ${file}
   sudo sed -i -r "s/javax.net.ssl.keyStorePassword=.*\"/javax.net.ssl.keyStorePassword=${keystore_pass}\"/g" ${file}
   sudo sed -i -r "s/javax.net.ssl.trustStorePassword=.*\"/javax.net.ssl.trustStorePassword=${truststore_pass}\"/g" ${file}
 
-  sudo chown cassandra:cassandra /etc/cassandra/cassandra*
-  sudo chmod a+r /etc/cassandra/cassandra*
+  sudo chown cassandra:cassandra /etc/cassandra/conf/cassandra*
+  sudo chmod a+r /etc/cassandra/conf/cassandra*
 
   if [[ -z ${max_heap_size} ]]; then
     sed -i -r "s/MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE=\"14G\"/g" ${file}
@@ -175,9 +189,47 @@ function update_cassandra_config()
   done
 }
 
+function configure_axon_agent()
+{
+  echo "FUNC: configure_axon_agent"
+  echo "USER: `whoami`"
+  echo "CWD: $PWD"
+
+  # axon_agent_org/axon_agent_key are optional (SSM params under secrets_path) -
+  # skip agent configuration entirely if this cluster hasn't been onboarded yet.
+  if [[ -z "${axon_agent_org}" || -z "${axon_agent_key}" ]]; then
+    echo "axon_agent_org/axon_agent_key not set in ${secrets_path} - skipping axon-agent configuration"
+    return
+  fi
+
+  sudo mkdir -p /etc/axonops
+  sudo cp ./axon-agent.yml /etc/axonops/axon-agent.yml
+
+  file="/etc/axonops/axon-agent.yml"
+
+  sudo sed -i -r "s/##AXON_AGENT_SERVER_HOST##/${axon_agent_server_host}/g" ${file}
+  sudo sed -i -r "s/##AXON_AGENT_SERVER_PORT##/${axon_agent_server_port}/g" ${file}
+  sudo sed -i -r "s/##AXON_AGENT_ORG##/${axon_agent_org}/g" ${file}
+  sudo sed -i -r "s/##AXON_AGENT_KEY##/${axon_agent_key}/g" ${file}
+  sudo sed -i -r "s/##CLUSTER_NAME##/${cluster}/g" ${file}
+  sudo sed -i -r "s/##HOST_NAME##/${node_name}/g" ${file}
+
+  sudo chown axonops:axonops ${file}
+  sudo chmod 0644 ${file}
+
+  # load the Cassandra javaagent (idempotent - only add once)
+  javaagent_line='JVM_OPTS="$JVM_OPTS -javaagent:/usr/share/axonops/axon-cassandra3.11-agent.jar=/etc/axonops/axon-agent.yml"'
+  if ! sudo grep -Fq "axon-cassandra3.11-agent.jar" /etc/cassandra/conf/cassandra-env.sh; then
+    echo "${javaagent_line}" | sudo tee -a /etc/cassandra/conf/cassandra-env.sh > /dev/null
+  fi
+
+  sudo systemctl enable axon-agent
+  sudo systemctl restart axon-agent
+}
+
 function gc_changes()
 {
-  cd /etc/cassandra
+  cd /etc/cassandra/conf
   echo "FUNC: gc_changes"
   echo "USER: `whoami`"
   echo "CWD: $PWD"
@@ -201,8 +253,8 @@ function gc_changes()
     echo "-Xms${max_heap_size}G" >> ${jvm_opts_location}
   fi
 
-  cp ${jvm_opts_location} /etc/cassandra/jvm.options
-  chmod 755 /etc/cassandra/jvm.options
+  cp ${jvm_opts_location} /etc/cassandra/conf/jvm.options
+  chmod 755 /etc/cassandra/conf/jvm.options
 }
 
 function start_services()
@@ -260,6 +312,7 @@ attach_network
 attach_storage
 setup_keys
 update_cassandra_config
+configure_axon_agent
 exec_external_scripts
 
 set +e

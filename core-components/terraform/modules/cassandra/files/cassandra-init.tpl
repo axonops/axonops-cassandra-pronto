@@ -1,6 +1,8 @@
 #!/bin/bash -vx
 
-AZ=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+# IMDSv2 is enforced (HttpTokens=required) - metadata requests must carry a session token
+IMDS_TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+AZ=$(curl -s -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" http://169.254.169.254/latest/meta-data/placement/availability-zone)
 
 # stop services
 
@@ -12,8 +14,8 @@ chown -R cassandra:cassandra /var/run/cassandra
 
 # fix configs
 
-sed -i "s/rack=.*/rack=$AZ/" /etc/cassandra/cassandra-rackdc.properties
-sed -i "s/dc=.*/dc=${dc_name}/" /etc/cassandra/cassandra-rackdc.properties
+sed -i "s/rack=.*/rack=$AZ/" /etc/cassandra/conf/cassandra-rackdc.properties
+sed -i "s/dc=.*/dc=${dc_name}/" /etc/cassandra/conf/cassandra-rackdc.properties
 
 sed -i 's@\*/10@*/1@' /etc/cron.d/sysstat
 echo "Modified /etc/cron.d/sysstat to gather metrics every minute"
@@ -58,7 +60,7 @@ chage -I -1 -m 0 -M 99999 -E -1 ansible
 ###################################
 # Tag root volume with tags
 ###################################
-instance_id=`curl http://169.254.169.254/latest/meta-data/instance-id/`
+instance_id=`curl -s -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" http://169.254.169.254/latest/meta-data/instance-id/`
 volume_id=`aws ec2 describe-instances --instance-id $instance_id --query "Reservations[].Instances[].BlockDeviceMappings[0].{VolumeID: Ebs.VolumeId}" --region ${region} | jq -r '.[0] | .VolumeID'`
 tags=""
 tag_keys=$(echo '${ec2_tag_map}' |  jq -r '.|keys | .[]')

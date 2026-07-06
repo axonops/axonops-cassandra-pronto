@@ -9,7 +9,8 @@
   vars:
     cassandra_install_format: pkg
     cassandra_start_on_boot: false
-    java_pkg: java-1.8.0-openjdk-headless
+    cassandra_version: "{{ cassandra_full_version }}"
+    java_use_zulu: true
 
     # axon-agent: install the package only. Real org/customer identity is
     # secret and gets configured post-boot, not baked into the AMI.

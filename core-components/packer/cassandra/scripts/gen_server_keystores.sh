@@ -10,8 +10,16 @@ ACCOUNT_NAME=$3
 VPC_NAME=$4
 CLUSTER_NAME=$5
 REGION=$6
+PRIVATE_IP=$7
 
-region=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/\(.*\)[a-z]/\1/')
+# keytool ships alongside java in the JDK's bin/ dir, but isn't always on PATH
+if ! command -v keytool >/dev/null 2>&1; then
+  export PATH="$(dirname "$(readlink -f "$(command -v java)")"):${PATH}"
+fi
+
+# IMDSv2 is enforced (HttpTokens=required) - metadata requests must carry a session token
+imds_token=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+region=$(curl -s -H "X-aws-ec2-metadata-token: ${imds_token}" http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/\(.*\)[a-z]/\1/')
 
 # Download secrets file
 ssm_secrets_path="/cassandra/${ACCOUNT_NAME}/${VPC_NAME}/${CLUSTER_NAME}/secrets"
@@ -37,7 +45,7 @@ rm -fr ./keystores/*
 rm -fr /etc/cassandra/keystores/*
 rm -fr /etc/cassandra/certs/*
 
-host=`ifconfig eth1 | grep -w "inet" | awk '{print $2}'`
+host=${PRIVATE_IP}
 
 ######################
 # use lock file on s3 to coordinate key generation between nodes
@@ -151,7 +159,6 @@ sudo chmod -R a+rx /etc/cassandra/keystores
 # update the cassandra_cqlshrc file
 mkdir -p /home/ansible/.cassandra
 cp ./cassandra_cqlshrc /home/ansible/.cassandra/cqlshrc
-PRIVATE_IP=`ifconfig eth1 | grep -w "inet" | awk '{print $2}'`
 sed -i -r "s/##PRIVATE_IP##/${PRIVATE_IP}/g" /home/ansible/.cassandra/cqlshrc
 sed -i -r "s/##CERT##/${host}_cert_signed/g" /home/ansible/.cassandra/cqlshrc
 chown -R ansible:ansible /home/ansible/.cassandra

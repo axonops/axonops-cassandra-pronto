@@ -3,6 +3,11 @@
 ROOT=$(git rev-parse --show-toplevel)
 CONFIGS="$ROOT/configurations"
 
+# portable replacement for `realpath --relative-to` (GNU-only, missing on macOS/BSD realpath)
+relpath() {
+  perl -e 'use File::Spec; print File::Spec->abs2rel($ARGV[0], $ARGV[1])' "$1" "$2"
+}
+
 usage() {
   echo "Usage:"
   echo "  init-ansible-key.sh"
@@ -62,7 +67,7 @@ if [[ ${FORCE} = true ]]; then
 fi
 
 if [[ -f ${KEYFILE} ]]; then
-  echo "SSH key file already present at: $(realpath --relative-to=${ROOT} ${KEYFILE})"
+  echo "SSH key file already present at: $(relpath ${KEYFILE} ${ROOT})"
   exit 0
 fi
 
@@ -104,7 +109,7 @@ if [[ -f ${USER_KEY} ]] && ssh-keygen -l -f ${USER_KEY} > /dev/null; then
       -e "s?##PERSONAL_PUB_KEY##?$(cat ${USER_KEY})?g" \
     ${KEYFILE_TPL} > ${KEYFILE}
 
-  echo "New key file written at: $(realpath --relative-to=${ROOT} ${KEYFILE})"
+  echo "New key file written at: $(relpath ${KEYFILE} ${ROOT})"
 else
   echo "User SSH key does not exist at: ${USER_KEY}"
   echo "Please generate an SSH key and configure the 'TERRAFORM_SSH_KEY_PATH' param in your variables.yaml file!"

@@ -383,3 +383,5 @@ JVM_OPTS="$JVM_OPTS -XX:+PerfDisableSharedMem"
 JVM_OPTS="$JVM_OPTS -XX:+DisableExplicitGC"
 JVM_OPTS="$JVM_OPTS -Djdk.nio.maxCachedBufferSize=262144"
 JVM_OPTS="$JVM_OPTS -Xloggc:/dev/shm/gc.log"
+
+JVM_OPTS="$JVM_OPTS -javaagent:/usr/share/axonops/axon-cassandra3.11-agent.jar=/etc/axonops/axon-agent.yml"

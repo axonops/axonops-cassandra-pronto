@@ -52,7 +52,7 @@ resource "aws_security_group" "cas-internode" {
     create_before_destroy = true
   }
 
-  tags = merge(map("Name", "cas-internode-${var.cluster_name}"), var.ec2_tags, local.required_ec2_tags)
+  tags = merge(tomap({ "Name" = "cas-internode-${var.cluster_name}" }), var.ec2_tags, local.required_ec2_tags)
 }
 
 resource "aws_security_group" "cas-client-access" {
@@ -75,7 +75,7 @@ resource "aws_security_group" "cas-client-access" {
     create_before_destroy = true
   }
 
-  tags = merge(map("Name", "cas-client-access-${var.cluster_name}"), var.ec2_tags, local.required_ec2_tags)
+  tags = merge(tomap({ "Name" = "cas-client-access-${var.cluster_name}" }), var.ec2_tags, local.required_ec2_tags)
 }
 
 resource "aws_security_group" "cas-bastion-access" {
@@ -102,6 +102,6 @@ resource "aws_security_group" "cas-bastion-access" {
     create_before_destroy = true
   }
 
-  tags = merge(map("Name", "cas-bastion-access-${var.cluster_name}"), var.ec2_tags, local.required_ec2_tags)
+  tags = merge(tomap({ "Name" = "cas-bastion-access-${var.cluster_name}" }), var.ec2_tags, local.required_ec2_tags)
 }
 

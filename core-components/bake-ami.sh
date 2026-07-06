@@ -178,7 +178,7 @@ if [[ -z "${BASE_AMI_ID:-}" ]]; then
   echo "Base AMI not configured, looking up latest Amazon Linux 2023 base AMI..."
   BASE_AMI_ID=$("${AWS_CMD[@]}" ec2 describe-images \
                   --owners amazon \
-                  --filters "Name=name,Values=al2023-ami-*-kernel-*-x86_64" "Name=state,Values=available" \
+                  --filters "Name=name,Values=al2023-ami-20*-kernel-*-x86_64" "Name=state,Values=available" \
                   --query 'sort_by(Images, &CreationDate)[-1].ImageId' --output text)
 fi
 

@@ -16,11 +16,16 @@ parse_creds() {
   PROFILE=$2
   KEY=$3
   # grab one profile by name: http://www.grymoire.com/Unix/Sed.html#uh-29
-  sed -En "/\[${PROFILE}\]/,/\[.*\]/p" ${CREDSFILE} | grep ^${KEY} | cut -d '=' -f 2-
+  sed -En "/\[${PROFILE}\]/,/\[.*\]/p" ${CREDSFILE} | grep ^${KEY} | cut -d '=' -f 2- | tr -d ' '
 }
 
 echoerr() {
   echo $1 >&2
+}
+
+# portable replacement for `realpath --relative-to` (GNU-only, missing on macOS/BSD realpath)
+relpath() {
+  perl -e 'use File::Spec; print File::Spec->abs2rel($ARGV[0], $ARGV[1])' "$1" "$2"
 }
 
 get_tfvar() {
@@ -46,7 +51,7 @@ usage() {
   echo "    -l : layer -> vpc, account, cluster"
   echo "    -t : action -> plan, apply, show"
   echo "    -d : credentials file"
-  echo "    -r : name of assumed_role"
+  echo "    -r : [Optional] name of assumed_role (cross-account only; omit for same-account deploys)"
   echo "    -i : account id"
   echo "    -b : tfstate bucket name"
   echo "    -o : ami owner acct id"
@@ -90,7 +95,7 @@ done
 shift "$((OPTIND-1))"
 
 # make sure we have the credentials terraform needs
-if [[ -z "${assumed_role// }" ]]; then usage; exit 1; fi
+# (assumed_role is optional: only needed for cross-account deploys)
 if [[ -z "${account_id// }" ]]; then usage; exit 1; fi
 if [[ -z "${credentials// }" ]]; then usage; exit 1; fi
 
@@ -191,7 +196,7 @@ if [[ "${layer// }" == "vpc-resources" ]]; then
   if [[ "$create_vpc" == "false" ]]; then
     vpc_id=$(get_tfvar "vpc_id")
     if [[ -z "${vpc_id// }" ]]; then
-      echoerr "MISSING VARS IN: $(realpath --relative-to=${ROOT} ${terraform_var_file})"
+      echoerr "MISSING VARS IN: $(relpath ${terraform_var_file} ${ROOT})"
       echoerr " - TERRAFORM_MANAGED_VPC (in variables.yaml) is FALSE, but no vpc_id specified in tfvars!"
       exit 1
     else
@@ -206,7 +211,7 @@ if [[ "${layer// }" == "vpc-resources" ]]; then
     data_subnets=$(get_tfvar "data_subnets")
     ingress_subnets=$(get_tfvar "ingress_subnets")
     if [[ -z "${vpc_cidr// }" ]] || [[ -z "${azs// }" ]] || [[ -z "${data_subnets// }" ]] || [[ -z "${ingress_subnets// }" ]]; then
-      echoerr "MISSING VARS IN: $(realpath --relative-to=${ROOT} ${terraform_var_file})"
+      echoerr "MISSING VARS IN: $(relpath ${terraform_var_file} ${ROOT})"
       echoerr " - TERRAFORM_MANAGED_VPC (in variables.yaml) is TRUE, but no cidr/prefix/subnet specified in tfvars!"
       exit 1
     else
@@ -219,7 +224,7 @@ if [[ "${layer// }" == "vpc-resources" ]]; then
       \rm -f ${build_dir}/vpc-info.tf
     fi
   else
-    echoerr "MISSING VARS IN: $(realpath --relative-to=${ROOT} ${terraform_var_file})"
+    echoerr "MISSING VARS IN: $(relpath ${terraform_var_file} ${ROOT})"
     echoerr " - TERRAFORM_MANAGED_VPC (in variables.yaml) is not set properly!"
     exit 1
   fi
@@ -245,10 +250,20 @@ if [[ -z "$(parse_creds "${credentials}" "${aws_profile}" "aws_access_key_id")" 
 fi
 
 # export credentials to env vars for terraform's use
-export AWS_ACCESS_KEY_ID="$(parse_creds "${credentials}" "${source_profile}" "aws_access_key_id")"
-export AWS_SECRET_ACCESS_KEY="$(parse_creds "${credentials}" "${source_profile}" "aws_secret_access_key")"
-export AWS_SESSION_TOKEN="$(parse_creds "${credentials}" "${source_profile}" "aws_session_token")"
+export AWS_ACCESS_KEY_ID="$(parse_creds "${credentials}" "${aws_profile}" "aws_access_key_id")"
+export AWS_SECRET_ACCESS_KEY="$(parse_creds "${credentials}" "${aws_profile}" "aws_secret_access_key")"
 export AWS_DEFAULT_REGION="${region}"
+
+# only export AWS_SESSION_TOKEN when the profile actually has one -- the AWS
+# SDK treats a present-but-empty session token as invalid and fails STS
+# AssumeRole calls (e.g. for the S3 backend's role_arn) with a misleading
+# "NoCredentialProviders" error
+session_token="$(parse_creds "${credentials}" "${aws_profile}" "aws_session_token")"
+if [[ -n "${session_token// }" ]]; then
+  export AWS_SESSION_TOKEN="${session_token}"
+else
+  unset AWS_SESSION_TOKEN
+fi
 
 # couldn't find any keys
 if [[ -z "${AWS_ACCESS_KEY_ID// }" ]]; then
@@ -263,8 +278,8 @@ fi
 pushd ${build_dir} > /dev/null
 
 echo "BUILD SETTINGS"
-echo "  tfvars path:  $(realpath --relative-to=${ROOT} ${terraform_var_file})"
-echo "  backend.tf:   $(realpath --relative-to=${ROOT} ${backend_file})"
+echo "  tfvars path:  $(relpath ${terraform_var_file} ${ROOT})"
+echo "  backend.tf:   $(relpath ${backend_file} ${ROOT})"
 echo "  account_id:   ${account_id}"
 echo "  assumed_role: ${assumed_role}"
 echo "  deploy dir:   $(pwd)"
@@ -281,7 +296,10 @@ echo no | terraform init -reconfigure
 # run terraform action
 ################################
 
-role_arn="arn:aws:iam::${account_id}:role/${assumed_role}"
+role_arn=""
+if [[ -n "${assumed_role// }" ]]; then
+  role_arn="arn:aws:iam::${account_id}:role/${assumed_role}"
+fi
 
 cidr_tfvar_op=""
 if [ "${layer}" ==  "vpc-resources" ]; then

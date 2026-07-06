@@ -4,7 +4,9 @@
 
 variable "region" {}
 variable "tfstate_region" {}
-variable "role_arn" {}
+variable "role_arn" {
+  default = ""
+}
 variable "profile" {}
 variable "ami_owner_id" {}
 
@@ -20,8 +22,8 @@ variable "account_name" { type = string }
 # for bastion module
 variable "account_id" { type = string }
 variable "tfstate_bucket" { type = string }
-variable "bastion_ami_prefix" { default = "amzn2-ami-hvm-2.0" }
-variable "ingress_cidrs" { type = list }
+variable "bastion_ami_prefix" { default = "al2023-ami-2023" }
+variable "ingress_cidrs" { type = list(any) }
 variable "existing_bastion_sg_id" { default = "" }
 variable "vpc_tags" { default = {} }
 variable "account_tags" { default = {} }

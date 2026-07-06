@@ -18,7 +18,7 @@ variable "instance_type" {
 variable "data_subnet_ids" { type = list(string) }
 variable "ingress_subnet_ids" { type = list(string) }
 variable "ingress_sg_port" { default = 22 }
-variable "ingress_sg_protocol" { default = "tcp"}
+variable "ingress_sg_protocol" { default = "tcp" }
 variable "ingress_sg_prefix" { default = "bastion-ssh-ingress" }
 
 # created by account-resources layer

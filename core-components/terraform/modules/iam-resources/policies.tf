@@ -13,6 +13,7 @@ data "aws_iam_policy_document" "ssm-parameterstore-doc" {
   statement {
     effect = "Allow"
     actions = [
+      "ssm:GetParameter",
       "ssm:GetParameters",
       "ssm:GetParametersByPath"
     ]

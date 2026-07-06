@@ -2,7 +2,7 @@
 collections:
   - name: https://github.com/axonops/axonops-ansible-collection.git
     type: git
-    version: fix/cassandra-311-yum-repo
+    version: main
   - name: community.general
     source: https://galaxy.ansible.com
   - name: ansible.posix

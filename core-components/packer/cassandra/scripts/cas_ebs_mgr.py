@@ -166,7 +166,7 @@ class CasEBSManager:
                                                                     VolumeType=volume_type,
                                                                     Size=volume_size,
                                                                     TagSpecifications=tag_spec)
-                        elif volume_type == "io1":
+                        elif volume_type in ("io1", "io2", "gp3"):
                             new_volume = self._client.create_volume(AvailabilityZone=instance["az"],
                                                                     Encrypted=True,
                                                                     VolumeType=volume_type,
@@ -174,11 +174,8 @@ class CasEBSManager:
                                                                     Size=volume_size,
                                                                     TagSpecifications=tag_spec)
                         else:
-                            print("Unknown volume_type [%s]" % volume_type)
-                        if new_volume:
-                            vol_id = new_volume["VolumeId"]
-                        else:
-                            print("Failed to create a new_volume")
+                            raise ValueError("Unknown volume_type [%s]" % volume_type)
+                        vol_id = new_volume["VolumeId"]
                     else:
                         vol_id = vol["VolumeId"]
                         print("Attaching tags to existing volume..")

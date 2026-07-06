@@ -19,7 +19,7 @@ resource "aws_lb" "bastion-nlb" {
 
   enable_cross_zone_load_balancing = true
 
-  tags = merge(map("Name", "bastion-lb"), var.ec2_tags, local.required_ec2_tags, local.bastion_lb_tags)
+  tags = merge(tomap({ "Name" = "bastion-lb" }), var.ec2_tags, local.required_ec2_tags, local.bastion_lb_tags)
 }
 
 resource "aws_lb_target_group" "bastion-targets" {

@@ -1,21 +1,27 @@
 data "terraform_remote_state" "account-resources" {
   backend = "s3"
-  config = {
-    role_arn = var.role_arn
-    bucket   = var.tfstate_bucket
-    key      = "${var.account_name}/account-resources/account.tfstate"
-    region   = var.tfstate_region
-  }
+  config = merge(
+    {
+      bucket = var.tfstate_bucket
+      key    = "${var.account_name}/account-resources/account.tfstate"
+      region = var.tfstate_region
+    },
+    # role_arn is optional: only assume a role when one is configured (cross-account setups)
+    var.role_arn != "" ? { role_arn = var.role_arn } : {}
+  )
 }
 
 data "terraform_remote_state" "vpc-resources" {
   backend = "s3"
-  config = {
-    role_arn = var.role_arn
-    bucket   = var.tfstate_bucket
-    key      = "${var.account_name}/${var.vpc_name}/vpc-resources/vpc.tfstate"
-    region   = var.tfstate_region
-  }
+  config = merge(
+    {
+      bucket = var.tfstate_bucket
+      key    = "${var.account_name}/${var.vpc_name}/vpc-resources/vpc.tfstate"
+      region = var.tfstate_region
+    },
+    # role_arn is optional: only assume a role when one is configured (cross-account setups)
+    var.role_arn != "" ? { role_arn = var.role_arn } : {}
+  )
 }
 
 module "cassandra" {

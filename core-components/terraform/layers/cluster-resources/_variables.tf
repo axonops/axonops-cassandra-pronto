@@ -2,7 +2,9 @@ variable "tfstate_bucket" {}
 variable "tfstate_region" {}
 variable "profile" {}
 variable "region" {}
-variable "role_arn" {}
+variable "role_arn" {
+  default = ""
+}
 
 variable "account_name" {}
 variable "vpc_name" {}

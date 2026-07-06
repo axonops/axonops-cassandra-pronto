@@ -1,0 +1,11 @@
+axon-server:
+    hosts: ##AXON_AGENT_SERVER_HOST##
+    port: ##AXON_AGENT_SERVER_PORT##
+
+axon-agent:
+    org: "##AXON_AGENT_ORG##"
+    key: ##AXON_AGENT_KEY##
+    host_name: "##HOST_NAME##"
+    cluster_name: "##CLUSTER_NAME##"
+    disable_command_exec: false
+    scripts_location: /var/lib/axonops/scripts/

@@ -12,6 +12,8 @@ variable "iam_resource_suffix" { default = "" }
 variable "profile" {}
 variable "ami_owner_id" {}
 variable "tfstate_region" {}
-variable "role_arn" {}
+variable "role_arn" {
+  default = ""
+}
 
 variable "account_tags" { default = {} }

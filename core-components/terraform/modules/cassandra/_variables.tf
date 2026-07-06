@@ -28,7 +28,9 @@ variable "availability_zones" { type = list(string) }
 variable "vpc_id" {}
 variable "datacenter" {}
 
-variable "sg_ops_nodes_to_cas" {}
+variable "sg_ops_nodes_to_cas" {
+  default = ""
+}
 variable "sg_bas_nodes_to_all" {}
 
 variable "cassandra_nodes_per_az" {}

@@ -4,9 +4,11 @@ if ! type jq; then
   sudo yum install -y jq
 fi
 
-REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone/ | sed 's/[a-z]$//')
-PROFILE=$(curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/)
-CREDS=$(curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/${PROFILE})
+# IMDSv2 is enforced (HttpTokens=required) - metadata requests must carry a session token
+IMDS_TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+REGION=$(curl -s -H "X-aws-ec2-metadata-token: ${IMDS_TOKEN}" http://169.254.169.254/latest/meta-data/placement/availability-zone/ | sed 's/[a-z]$//')
+PROFILE=$(curl -s -H "X-aws-ec2-metadata-token: ${IMDS_TOKEN}" http://169.254.169.254/latest/meta-data/iam/security-credentials/)
+CREDS=$(curl -s -H "X-aws-ec2-metadata-token: ${IMDS_TOKEN}" http://169.254.169.254/latest/meta-data/iam/security-credentials/${PROFILE})
 
 ACCESS_KEY=$(echo ${CREDS} | jq -r '.AccessKeyId')
 SECRET_KEY=$(echo ${CREDS} | jq -r '.SecretAccessKey')

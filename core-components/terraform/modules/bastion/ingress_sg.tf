@@ -10,9 +10,9 @@ resource "aws_security_group" "bastion-ssh-ingress" {
   revoke_rules_on_delete = true
 
   ingress {
-    from_port = var.ingress_sg_port
-    to_port   = var.ingress_sg_port
-    protocol  = var.ingress_sg_protocol
+    from_port   = var.ingress_sg_port
+    to_port     = var.ingress_sg_port
+    protocol    = var.ingress_sg_protocol
     cidr_blocks = concat(var.bastion_ingress_cidrs, tolist([var.vpc_cidr]))
   }
 
@@ -27,7 +27,7 @@ resource "aws_security_group" "bastion-ssh-ingress" {
     create_before_destroy = true
   }
 
-  tags = merge(map("Name", "${var.ingress_sg_prefix}-${var.ingress_sg_protocol}-${var.ingress_sg_port}"), var.ec2_tags, local.required_ec2_tags)
+  tags = merge(tomap({ "Name" = "${var.ingress_sg_prefix}-${var.ingress_sg_protocol}-${var.ingress_sg_port}" }), var.ec2_tags, local.required_ec2_tags)
 }
 
 #############################################
@@ -52,6 +52,6 @@ resource "aws_security_group" "bastion-sg" {
     create_before_destroy = true
   }
 
-  tags = merge(map("Name", "bastion-elb-nodes"), var.ec2_tags, local.required_ec2_tags)
+  tags = merge(tomap({ "Name" = "bastion-elb-nodes" }), var.ec2_tags, local.required_ec2_tags)
 }
 
